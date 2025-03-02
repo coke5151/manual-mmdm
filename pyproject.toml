@@ -1,14 +1,15 @@
 [project]
-name = "python-project-template"
+name = "manual-mmdm"
 version = "0.1.0"
 dependencies = []
+description = "Manual version of Minecraft Mod Dependency Manager"
+authors = [{ name = "pytree", email = "houjunqimail@gmail.com" }]
+requires-python = "==3.13.*"
+readme = "README.md"
+license = { text = "MIT" }
 
 [dependency-groups]
-dev = [
-    "ruff",
-    "mypy",
-    "jupyterlab",
-]
+dev = ["ruff", "mypy", "jupyterlab"]
 
 [tool.pyright]
 exclude = [".venv", "venv"]

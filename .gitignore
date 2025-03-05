@@ -207,3 +207,7 @@ pyrightconfig.json
 
 # ignore local environment path information of PDM
 .pdm-python
+
+# database or mods folder
+*.db
+mods/

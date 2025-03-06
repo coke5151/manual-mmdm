@@ -90,6 +90,13 @@ class ModDialog(QDialog):
         layout.addWidget(self.client_required)
         layout.addWidget(self.server_required)
 
+        # Notes
+        notes_layout = QVBoxLayout()
+        notes_layout.addWidget(QLabel(self.translations["label_notes"]))
+        self.notes_edit = QLineEdit()
+        notes_layout.addWidget(self.notes_edit)
+        layout.addLayout(notes_layout)
+
         # Dependencies
         dependency_label = QLabel(self.translations["label_dependencies"])
         layout.addWidget(dependency_label)
@@ -214,6 +221,7 @@ class ModDialog(QDialog):
             self.is_translated.setChecked(self.mod.is_translated)
             self.client_required.setChecked(self.mod.client_required)
             self.server_required.setChecked(self.mod.server_required)
+            self.notes_edit.setText(self.mod.notes)
 
             # Set categories
             if self.mod.categories:
@@ -287,6 +295,7 @@ class ModDialog(QDialog):
     def accept(self):
         name = self.name_edit.text()
         filename = self.filename_edit.text()
+        notes = self.notes_edit.text()
 
         if not name or not filename:
             QMessageBox.warning(
@@ -314,6 +323,7 @@ class ModDialog(QDialog):
                 mod.is_translated = self.is_translated.isChecked()
                 mod.client_required = self.client_required.isChecked()
                 mod.server_required = self.server_required.isChecked()
+                mod.notes = notes
 
                 # Update categories
                 selected_category = self.category_combo.currentText()
@@ -354,7 +364,6 @@ class ModDialog(QDialog):
                     return
 
             else:
-                # Add mode: copy file
                 target_path = mods_dir / filename
                 try:
                     source_path = self.last_selected_file
@@ -381,6 +390,7 @@ class ModDialog(QDialog):
                     is_translated=self.is_translated.isChecked(),
                     client_required=self.client_required.isChecked(),
                     server_required=self.server_required.isChecked(),
+                    notes=notes,
                 )
 
                 # Set categories
@@ -662,7 +672,7 @@ class MainWindow(QMainWindow):
 
         # Module list
         self.mod_table = QTableWidget()
-        self.mod_table.setColumnCount(7)
+        self.mod_table.setColumnCount(8)
         self.update_table_headers()
         self.mod_table.setSelectionBehavior(QTableWidget.SelectionBehavior.SelectRows)
         self.mod_table.setSelectionMode(QTableWidget.SelectionMode.SingleSelection)
@@ -716,6 +726,7 @@ class MainWindow(QMainWindow):
                 self.translations["header_server"],
                 self.translations["header_dependencies"],
                 self.translations["header_filename"],
+                self.translations["header_notes"],
             ]
         )
 
@@ -886,6 +897,10 @@ class MainWindow(QMainWindow):
                 filename_item = QTableWidgetItem(mod.filename)
                 filename_item.setFlags(filename_item.flags() & ~Qt.ItemFlag.ItemIsEditable)
                 self.mod_table.setItem(i, 6, filename_item)
+
+                notes_item = QTableWidgetItem(mod.notes or "")
+                notes_item.setFlags(notes_item.flags() & ~Qt.ItemFlag.ItemIsEditable)
+                self.mod_table.setItem(i, 7, notes_item)
 
                 # Adjust row height
                 if is_expanded and mod.dependencies:

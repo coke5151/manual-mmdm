@@ -37,6 +37,7 @@ class Mod(Base):
     client_required: Mapped[bool] = mapped_column(Boolean, default=True)
     server_required: Mapped[bool] = mapped_column(Boolean, default=True)
     filename: Mapped[str] = mapped_column(String)
+    notes: Mapped[str | None] = mapped_column(String, nullable=True)
 
     # Relationships
     categories: Mapped[list[Category]] = relationship(secondary=mod_category, back_populates="mods")

@@ -31,7 +31,7 @@ from PyQt6.QtWidgets import (
 from database import SessionLocal, engine
 from models import Base, Category, Mod
 
-# 建立資料表
+# Create tables
 Base.metadata.create_all(bind=engine)
 
 
@@ -40,63 +40,63 @@ class ModDialog(QDialog):
         super().__init__(parent)
         self.mod = mod
         self.last_selected_file = None
-        self.setWindowTitle("新增/編輯模組")
+        self.setWindowTitle("Add/Edit Mod")
         self.setup_ui()
 
     def setup_ui(self):
         layout = QVBoxLayout()
 
-        # 模組名稱
+        # Module name
         name_layout = QHBoxLayout()
-        name_layout.addWidget(QLabel("模組名稱:"))
+        name_layout.addWidget(QLabel("Module Name:"))
         self.name_edit = QLineEdit()
         name_layout.addWidget(self.name_edit)
         layout.addLayout(name_layout)
 
-        # 檔案選擇
+        # File selection
         file_layout = QHBoxLayout()
-        file_layout.addWidget(QLabel("模組檔案:"))
+        file_layout.addWidget(QLabel("Module File:"))
         self.filename_edit = QLineEdit()
-        # 如果是編輯模式，允許編輯檔案名稱
+        # If in edit mode, allow editing file name
         if self.mod:
             self.filename_edit.setReadOnly(False)
         else:
             self.filename_edit.setReadOnly(True)
-            browse_button = QPushButton("瀏覽...")
+            browse_button = QPushButton("Browse...")
             browse_button.clicked.connect(self.browse_file)
             file_layout.addWidget(browse_button)
         file_layout.addWidget(self.filename_edit)
         layout.addLayout(file_layout)
 
-        # 分類
+        # Categories
         category_layout = QHBoxLayout()
-        category_layout.addWidget(QLabel("分類:"))
+        category_layout.addWidget(QLabel("Category:"))
         self.category_combo = QComboBox()
         self.load_categories()
         category_layout.addWidget(self.category_combo)
-        manage_category_button = QPushButton("管理分類...")
+        manage_category_button = QPushButton("Manage Categories...")
         manage_category_button.clicked.connect(self.manage_categories)
         category_layout.addWidget(manage_category_button)
         layout.addLayout(category_layout)
 
-        # 選項
-        self.is_translated = QCheckBox("已漢化")
-        self.client_required = QCheckBox("需要客戶端")
-        self.server_required = QCheckBox("需要伺服器")
+        # Options
+        self.is_translated = QCheckBox("Translated")
+        self.client_required = QCheckBox("Client Required")
+        self.server_required = QCheckBox("Server Required")
         layout.addWidget(self.is_translated)
         layout.addWidget(self.client_required)
         layout.addWidget(self.server_required)
 
-        # 前置模組
-        dependency_label = QLabel("前置模組:")
+        # Dependencies
+        dependency_label = QLabel("Dependencies:")
         layout.addWidget(dependency_label)
 
-        # 建立水平佈局來放置兩個列表和按鈕
+        # Create horizontal layout for lists and buttons
         lists_layout = QHBoxLayout()
 
-        # 可用模組列表
+        # Available modules list
         available_layout = QVBoxLayout()
-        available_layout.addWidget(QLabel("可用模組:"))
+        available_layout.addWidget(QLabel("Available Modules:"))
         self.available_list = QListWidget()
         self.available_list.setSelectionMode(QListWidget.SelectionMode.MultiSelection)
         self.available_list.setStyleSheet("""
@@ -109,29 +109,29 @@ class ModDialog(QDialog):
                 border-radius: 2px;
             }
             QListWidget::item:selected {
-                background-color: #1976D2;  /* 使用深藍色作為選取背景 */
+                background-color: #1976D2;  /* Use dark blue for selection background */
                 color: white;
             }
             QListWidget::item:selected:!active {
-                background-color: #42A5F5;  /* 未激活時使用中等深度的藍色 */
+                background-color: #42A5F5;  /* Use medium blue when not active */
                 color: white;
             }
             QListWidget::item:hover {
-                background-color: #E3F2FD;  /* 滑鼠懸停時使用非常淺的藍色 */
-                color: black;  /* 懸停時使用黑色文字 */
+                background-color: #E3F2FD;  /* Use very light blue for hover */
+                color: black;  /* Use black text for hover */
             }
         """)
         available_layout.addWidget(self.available_list)
         lists_layout.addLayout(available_layout)
 
-        # 按鈕
+        # Buttons
         button_layout = QVBoxLayout()
         button_layout.addStretch()
         add_button = QPushButton(">>")
         add_button.clicked.connect(self.add_dependencies)
         remove_button = QPushButton("<<")
         remove_button.clicked.connect(self.remove_dependencies)
-        # 設定按鈕樣式
+        # Set button style
         button_style = """
             QPushButton {
                 padding: 4px 8px;
@@ -139,16 +139,16 @@ class ModDialog(QDialog):
                 border: 1px solid #90CAF9;
                 border-radius: 4px;
                 min-width: 40px;
-                color: #1976D2;  /* 使用深藍色作為文字顏色 */
-                font-weight: bold;  /* 文字加粗 */
+                color: #1976D2;  /* Use dark blue for text color */
+                font-weight: bold;  /* Bold text */
             }
             QPushButton:hover {
                 background-color: #BBDEFB;
-                color: #1565C0;  /* 懸停時使用更深的藍色 */
+                color: #1565C0;  /* Use darker blue on hover */
             }
             QPushButton:pressed {
                 background-color: #90CAF9;
-                color: #0D47A1;  /* 按下時使用最深的藍色 */
+                color: #0D47A1;  /* Use darkest blue when pressed */
             }
         """
         add_button.setStyleSheet(button_style)
@@ -158,9 +158,9 @@ class ModDialog(QDialog):
         button_layout.addStretch()
         lists_layout.addLayout(button_layout)
 
-        # 已選擇模組列表
+        # Selected modules list
         selected_layout = QVBoxLayout()
-        selected_layout.addWidget(QLabel("已選擇:"))
+        selected_layout.addWidget(QLabel("Selected:"))
         self.selected_list = QListWidget()
         self.selected_list.setSelectionMode(QListWidget.SelectionMode.MultiSelection)
         self.selected_list.setStyleSheet("""
@@ -173,16 +173,16 @@ class ModDialog(QDialog):
                 border-radius: 2px;
             }
             QListWidget::item:selected {
-                background-color: #1976D2;  /* 使用深藍色作為選取背景 */
+                background-color: #1976D2;  /* Use dark blue for selection background */
                 color: white;
             }
             QListWidget::item:selected:!active {
-                background-color: #42A5F5;  /* 未激活時使用中等深度的藍色 */
+                background-color: #42A5F5;  /* Use medium blue when not active */
                 color: white;
             }
             QListWidget::item:hover {
-                background-color: #E3F2FD;  /* 滑鼠懸停時使用非常淺的藍色 */
-                color: black;  /* 懸停時使用黑色文字 */
+                background-color: #E3F2FD;  /* Use very light blue for hover */
+                color: black;  /* Use black text for hover */
             }
         """)
         selected_layout.addWidget(self.selected_list)
@@ -190,11 +190,11 @@ class ModDialog(QDialog):
 
         layout.addLayout(lists_layout)
 
-        # 按鈕
+        # Buttons
         button_layout = QHBoxLayout()
-        save_button = QPushButton("儲存")
+        save_button = QPushButton("Save")
         save_button.clicked.connect(self.accept)
-        cancel_button = QPushButton("取消")
+        cancel_button = QPushButton("Cancel")
         cancel_button.clicked.connect(self.reject)
         button_layout.addWidget(save_button)
         button_layout.addWidget(cancel_button)
@@ -202,8 +202,8 @@ class ModDialog(QDialog):
 
         self.setLayout(layout)
 
-        # 載入初始資料
-        self.load_mods()  # 確保在新增和編輯模式都載入可用模組
+        # Load initial data
+        self.load_mods()  # Ensure modules are loaded in both add and edit modes
 
         if self.mod:
             self.name_edit.setText(self.mod.name)
@@ -212,7 +212,7 @@ class ModDialog(QDialog):
             self.client_required.setChecked(self.mod.client_required)
             self.server_required.setChecked(self.mod.server_required)
 
-            # 設定分類
+            # Set categories
             if self.mod.categories:
                 category_name = self.mod.categories[0].name
                 index = self.category_combo.findText(category_name)
@@ -221,18 +221,18 @@ class ModDialog(QDialog):
 
     def browse_file(self):
         file_path, _ = QFileDialog.getOpenFileName(
-            self, "選擇模組檔案", "", "Minecraft 模組檔案 (*.jar);;所有檔案 (*.*)"
+            self, "Choose Module File", "", "Minecraft Module Files (*.jar);;All Files (*.*)"
         )
         if file_path:
-            # 儲存選擇的檔案路徑
+            # Store selected file path
             self.last_selected_file = file_path
-            # 取得檔案名稱
+            # Get file name
             filename = os.path.basename(file_path)
             self.filename_edit.setText(filename)
 
-            # 設定模組名稱（如果尚未設定）
+            # Set module name (if not set)
             if not self.name_edit.text():
-                # 移除副檔名並將底線替換為空格
+                # Remove extension and replace underscores with spaces
                 name = os.path.splitext(filename)[0].replace("_", " ")
                 self.name_edit.setText(name)
 
@@ -250,25 +250,25 @@ class ModDialog(QDialog):
             self.selected_list.clear()
 
             for mod in mods:
-                # 不顯示自己作為前置選項
+                # Don't show self as dependency option
                 if self.mod and mod.id == self.mod.id:
                     continue
 
-                # 如果是編輯模式且該模組是前置模組，加入已選擇列表
+                # If in edit mode and module is a dependency, add to selected list
                 if self.mod and mod in self.mod.dependencies:
                     self.selected_list.addItem(mod.name)
                 else:
-                    # 否則加入可用列表
+                    # Otherwise add to available list
                     self.available_list.addItem(mod.name)
 
     def add_dependencies(self):
-        # 將選中的項目從可用列表移到已選擇列表
+        # Move selected items from available list to selected list
         for item in self.available_list.selectedItems():
             self.available_list.takeItem(self.available_list.row(item))
             self.selected_list.addItem(item.text())
 
     def remove_dependencies(self):
-        # 將選中的項目從已選擇列表移回可用列表
+        # Move selected items from selected list back to available list
         for item in self.selected_list.selectedItems():
             self.selected_list.takeItem(self.selected_list.row(item))
             self.available_list.addItem(item.text())
@@ -276,79 +276,79 @@ class ModDialog(QDialog):
     def manage_categories(self):
         dialog = CategoryManagerDialog(self)
         if dialog.exec():
-            self.load_categories()  # 重新載入分類列表
+            self.load_categories()  # Reload category list
 
     def accept(self):
         name = self.name_edit.text()
         filename = self.filename_edit.text()
 
         if not name or not filename:
-            QMessageBox.warning(self, "錯誤", "模組名稱和檔案名稱不能為空")
+            QMessageBox.warning(self, "Error", "Module name and file name cannot be empty")
             return
 
-        # 確保檔案名稱有 .jar 副檔名
+        # Ensure file name has .jar extension
         if not filename.lower().endswith(".jar"):
             filename = filename + ".jar"
             self.filename_edit.setText(filename)
 
-        # 建立 mods 目錄（如果不存在）
+        # Create mods directory (if not exists)
         mods_dir = Path("mods")
         mods_dir.mkdir(exist_ok=True)
 
         with SessionLocal() as db:
             if self.mod:
-                # 更新現有模組
-                mod = db.merge(self.mod)  # 將模組合併到當前 session
+                # Update existing module
+                mod = db.merge(self.mod)  # Merge module into current session
                 mod.name = name
                 mod.filename = filename
                 mod.is_translated = self.is_translated.isChecked()
                 mod.client_required = self.client_required.isChecked()
                 mod.server_required = self.server_required.isChecked()
 
-                # 更新分類
+                # Update categories
                 selected_category = self.category_combo.currentText()
                 if selected_category:
                     category = db.query(Category).filter(Category.name == selected_category).first()
                     if category:
                         mod.categories = [category]
 
-                # 更新前置模組
+                # Update dependencies
                 dependencies = []
                 for i in range(self.selected_list.count()):
                     item = self.selected_list.item(i)
-                    if item:  # 確保 item 不是 None
+                    if item:  # Ensure item is not None
                         dependency = db.query(Mod).filter(Mod.name == item.text()).first()
                         if dependency:
                             dependencies.append(dependency)
                 mod.dependencies = dependencies
 
-                # 重新命名檔案
+                # Rename file
                 old_path = mods_dir / self.mod.filename
                 new_path = mods_dir / filename
                 try:
-                    if old_path != new_path:  # 只有當檔名確實改變時才重新命名
+                    if old_path != new_path:  # Only rename when filename actually changes
                         if new_path.exists():
-                            QMessageBox.warning(self, "錯誤", f"檔案 {filename} 已經存在")
+                            QMessageBox.warning(self, "Error", f"File {filename} already exists")
                             return
                         old_path.rename(new_path)
                 except Exception as e:
-                    QMessageBox.critical(self, "錯誤", f"重新命名檔案時發生錯誤：{str(e)}")
+                    QMessageBox.critical(self, "Error", f"Error renaming file: {str(e)}")
                     return
 
             else:
-                # 新增模式：複製檔案
+                # Add mode: copy file
                 target_path = mods_dir / filename
                 try:
                     source_path = self.last_selected_file
                     if not source_path:
-                        QMessageBox.warning(self, "錯誤", "請選擇模組檔案")
+                        QMessageBox.warning(self, "Error", "Please choose module file")
                         return
                     shutil.copy2(source_path, target_path)
                 except Exception as e:
-                    QMessageBox.critical(self, "錯誤", f"複製檔案時發生錯誤：{str(e)}")
+                    QMessageBox.critical(self, "Error", f"Error copying file: {str(e)}")
                     return
 
-                # 新增模組
+                # Add module
                 mod = Mod(
                     name=name,
                     filename=filename,
@@ -357,18 +357,18 @@ class ModDialog(QDialog):
                     server_required=self.server_required.isChecked(),
                 )
 
-                # 設定分類
+                # Set categories
                 selected_category = self.category_combo.currentText()
                 if selected_category:
                     category = db.query(Category).filter(Category.name == selected_category).first()
                     if category:
                         mod.categories = [category]
 
-                # 設定前置模組
+                # Set dependencies
                 dependencies = []
                 for i in range(self.selected_list.count()):
                     item = self.selected_list.item(i)
-                    if item:  # 確保 item 不是 None
+                    if item:  # Ensure item is not None
                         dependency = db.query(Mod).filter(Mod.name == item.text()).first()
                         if dependency:
                             dependencies.append(dependency)
@@ -384,24 +384,24 @@ class CategoryDialog(QDialog):
     def __init__(self, parent=None, category=None):
         super().__init__(parent)
         self.category = category
-        self.setWindowTitle("新增分類" if not category else "編輯分類")
+        self.setWindowTitle("Add Category" if not category else "Edit Category")
         self.setup_ui()
 
     def setup_ui(self):
         layout = QVBoxLayout()
 
-        # 分類名稱
+        # Category name
         name_layout = QHBoxLayout()
-        name_layout.addWidget(QLabel("分類名稱:"))
+        name_layout.addWidget(QLabel("Category Name:"))
         self.name_edit = QLineEdit()
         name_layout.addWidget(self.name_edit)
         layout.addLayout(name_layout)
 
-        # 按鈕
+        # Buttons
         button_layout = QHBoxLayout()
-        save_button = QPushButton("儲存")
+        save_button = QPushButton("Save")
         save_button.clicked.connect(self.accept)
-        cancel_button = QPushButton("取消")
+        cancel_button = QPushButton("Cancel")
         cancel_button.clicked.connect(self.reject)
         button_layout.addWidget(save_button)
         button_layout.addWidget(cancel_button)
@@ -419,26 +419,26 @@ class CategoryDialog(QDialog):
 class CategoryManagerDialog(QDialog):
     def __init__(self, parent=None):
         super().__init__(parent)
-        self.setWindowTitle("管理分類")
+        self.setWindowTitle("Manage Categories")
         self.setup_ui()
         self.load_categories()
 
     def setup_ui(self):
         layout = QVBoxLayout()
 
-        # 分類列表
+        # Category list
         self.category_list = QListWidget()
         layout.addWidget(self.category_list)
 
-        # 按鈕
+        # Buttons
         button_layout = QHBoxLayout()
-        add_button = QPushButton("新增")
+        add_button = QPushButton("Add")
         add_button.clicked.connect(self.add_category)
-        edit_button = QPushButton("編輯")
+        edit_button = QPushButton("Edit")
         edit_button.clicked.connect(self.edit_category)
-        delete_button = QPushButton("刪除")
+        delete_button = QPushButton("Delete")
         delete_button.clicked.connect(self.delete_category)
-        close_button = QPushButton("關閉")
+        close_button = QPushButton("Close")
         close_button.clicked.connect(self.accept)
         button_layout.addWidget(add_button)
         button_layout.addWidget(edit_button)
@@ -469,7 +469,7 @@ class CategoryManagerDialog(QDialog):
     def edit_category(self):
         current_item = self.category_list.currentItem()
         if not current_item:
-            QMessageBox.warning(self, "警告", "請先選擇一個分類")
+            QMessageBox.warning(self, "Warning", "Please select a category")
             return
 
         with SessionLocal() as db:
@@ -486,13 +486,14 @@ class CategoryManagerDialog(QDialog):
     def delete_category(self):
         current_item = self.category_list.currentItem()
         if not current_item:
-            QMessageBox.warning(self, "警告", "請先選擇一個分類")
+            QMessageBox.warning(self, "Warning", "Please select a category")
             return
 
         reply = QMessageBox.question(
             self,
-            "確認刪除",
-            f"確定要刪除分類「{current_item.text()}」嗎？\n注意：這將移除所有模組與此分類的關聯。",
+            "Confirm Delete",
+            f'Are you sure you want to delete category "{current_item.text()}"?\n'
+            + "Note: This will remove all modules associated with this category.",
             QMessageBox.StandardButton.Yes | QMessageBox.StandardButton.No,
         )
 
@@ -508,117 +509,119 @@ class CategoryManagerDialog(QDialog):
 class MainWindow(QMainWindow):
     def __init__(self):
         super().__init__()
-        self.setWindowTitle("Minecraft 模組管理器")
-        # 設定預設視窗大小
+        self.setWindowTitle("Minecraft Module Manager")
+        # Set default window size
         self.resize(800, 600)
         self.setup_ui()
         self.load_mods()
 
     def setup_ui(self):
-        # 設定選單列
+        # Set menu bar
         menubar: QMenuBar | None = self.menuBar()
         if not menubar:
             return
 
-        # 檔案選單
-        file_menu: QMenu | None = menubar.addMenu("檔案")
+        # File menu
+        file_menu: QMenu | None = menubar.addMenu("File")
         if not file_menu:
             return
-        add_mod_action: QAction | None = file_menu.addAction("新增模組")
+        add_mod_action: QAction | None = file_menu.addAction("Add Module")
         if add_mod_action:
             add_mod_action.triggered.connect(self.add_mod)
-        edit_mod_action: QAction | None = file_menu.addAction("編輯模組")
+        edit_mod_action: QAction | None = file_menu.addAction("Edit Module")
         if edit_mod_action:
             edit_mod_action.triggered.connect(self.edit_mod)
-        delete_mod_action: QAction | None = file_menu.addAction("刪除模組")
+        delete_mod_action: QAction | None = file_menu.addAction("Delete Module")
         if delete_mod_action:
             delete_mod_action.triggered.connect(self.delete_mod)
         file_menu.addSeparator()
-        exit_action: QAction | None = file_menu.addAction("結束")
+        exit_action: QAction | None = file_menu.addAction("Exit")
         if exit_action:
             exit_action.triggered.connect(self.close)
 
-        # 管理選單
-        manage_menu: QMenu | None = menubar.addMenu("管理")
+        # Management menu
+        manage_menu: QMenu | None = menubar.addMenu("Manage")
         if not manage_menu:
             return
-        add_category_action: QAction | None = manage_menu.addAction("新增分類")
+        add_category_action: QAction | None = manage_menu.addAction("Add Category")
         if add_category_action:
             add_category_action.triggered.connect(self.add_category)
-        manage_categories_action: QAction | None = manage_menu.addAction("管理分類")
+        manage_categories_action: QAction | None = manage_menu.addAction("Manage Categories")
         if manage_categories_action:
             manage_categories_action.triggered.connect(self.manage_categories)
 
-        # 主要內容區域
+        # Main content area
         central_widget = QWidget()
         self.setCentralWidget(central_widget)
         layout = QVBoxLayout(central_widget)
 
-        # 工具列（按鈕列）
+        # Toolbar (button row)
         button_layout = QHBoxLayout()
 
-        # 新增模組按鈕
-        add_button = QPushButton("新增模組")
+        # Add module button
+        add_button = QPushButton("Add Module")
         add_button.clicked.connect(self.add_mod)
         button_layout.addWidget(add_button)
 
-        # 編輯模組按鈕
-        edit_button = QPushButton("編輯模組")
+        # Edit module button
+        edit_button = QPushButton("Edit Module")
         edit_button.clicked.connect(self.edit_mod)
         button_layout.addWidget(edit_button)
 
-        # 刪除模組按鈕
-        delete_button = QPushButton("刪除模組")
+        # Delete module button
+        delete_button = QPushButton("Delete Module")
         delete_button.clicked.connect(self.delete_mod)
         button_layout.addWidget(delete_button)
 
-        # 分隔線
+        # Separator
         button_layout.addStretch()
 
-        # 展開/折疊按鈕
-        self.expand_button = QPushButton("展開前置")
-        self.expand_button.setCheckable(True)  # 使按鈕可以切換狀態
+        # Expand/collapse button
+        self.expand_button = QPushButton("Expand Dependencies")
+        self.expand_button.setCheckable(True)  # Make button toggleable
         self.expand_button.clicked.connect(self.toggle_dependencies)
         button_layout.addWidget(self.expand_button)
 
-        # 分隔線
+        # Separator
         button_layout.addStretch()
 
-        # 管理分類按鈕
-        manage_categories_button = QPushButton("管理分類")
+        # Manage categories button
+        manage_categories_button = QPushButton("Manage Categories")
         manage_categories_button.clicked.connect(self.manage_categories)
         button_layout.addWidget(manage_categories_button)
 
         layout.addLayout(button_layout)
 
-        # 搜尋列
+        # Search bar
         search_layout = QHBoxLayout()
-        search_layout.addWidget(QLabel("搜尋:"))
+        search_layout.addWidget(QLabel("Search:"))
         self.search_edit = QLineEdit()
         self.search_edit.textChanged.connect(self.filter_mods)
         search_layout.addWidget(self.search_edit)
         layout.addLayout(search_layout)
 
-        # 模組列表
+        # Module list
         self.mod_table = QTableWidget()
         self.mod_table.setColumnCount(7)
-        self.mod_table.setHorizontalHeaderLabels(["模組名稱", "分類", "已漢化", "客戶端", "伺服器", "前置", "檔案名稱"])
+        self.mod_table.setHorizontalHeaderLabels(
+            ["Module Name", "Category", "Translated", "Client", "Server", "Dependencies", "File Name"]
+        )
         self.mod_table.setSelectionBehavior(QTableWidget.SelectionBehavior.SelectRows)
         self.mod_table.setSelectionMode(QTableWidget.SelectionMode.SingleSelection)
-        # 設定表格自動調整寬度
+        # Set table to auto-adjust width
         header = self.mod_table.horizontalHeader()
         if header:
-            # 設定所有欄位都可以調整大小
+            # Set all columns resizable
             for i in range(self.mod_table.columnCount()):
                 header.setSectionResizeMode(i, QHeaderView.ResizeMode.Interactive)
-            # 監聽欄位寬度變化
+            # Monitor column width changes
             header.sectionResized.connect(self.update_column_ratios)
 
-        # 設定雙擊事件
+        # Set double-click event
         self.mod_table.doubleClicked.connect(self.edit_mod)
-        # 設定文字換行
+        # Set text wrapping
         self.mod_table.setWordWrap(True)
-        # 設定選取樣式
+        # Set selection style
         self.mod_table.setStyleSheet("""
             QTableWidget::item {
                 padding: 5px;
@@ -638,13 +641,13 @@ class MainWindow(QMainWindow):
         """)
         layout.addWidget(self.mod_table)
 
-        # 狀態列
+        # Status bar
         status_bar: QStatusBar | None = self.statusBar()
         if status_bar:
-            status_bar.showMessage("就緒")
+            status_bar.showMessage("Ready")
 
     def update_column_ratios(self):
-        """更新欄位寬度比例"""
+        """Update column width ratios"""
         header = self.mod_table.horizontalHeader()
         if header:
             total_width = sum(header.sectionSize(i) for i in range(self.mod_table.columnCount()))
@@ -654,18 +657,18 @@ class MainWindow(QMainWindow):
     def resizeEvent(self, a0: QResizeEvent | None) -> None:  # noqa: N802 (This is special method of Qt)
         if a0 is not None:
             super().resizeEvent(a0)
-            # 當視窗大小改變時，等比例調整所有欄位寬度
+            # When window size changes, adjust all column widths proportionally
             header = self.mod_table.horizontalHeader()
             viewport = self.mod_table.viewport()
             if header and viewport and hasattr(self, "column_ratios"):
-                new_total_width = viewport.width()
-                # 暫時取消寬度變化的監聽，避免循環更新
+                # Temporarily disconnect width change monitoring to avoid circular updates
                 header.sectionResized.disconnect(self.update_column_ratios)
-                # 根據儲存的比例調整每個欄位的寬度
+                # Adjust each column width based on stored ratios
+                new_total_width = viewport.width()
                 for i, ratio in enumerate(self.column_ratios):
                     new_width = int(new_total_width * ratio)
                     header.resizeSection(i, new_width)
-                # 重新連接寬度變化的監聽
+                # Reconnect width change monitoring
                 header.sectionResized.connect(self.update_column_ratios)
 
     def filter_mods(self):
@@ -685,8 +688,8 @@ class MainWindow(QMainWindow):
 
     def toggle_dependencies(self):
         is_expanded = self.expand_button.isChecked()
-        self.expand_button.setText("折疊前置" if is_expanded else "展開前置")
-        self.load_mods()  # 重新載入模組列表以更新顯示
+        self.expand_button.setText("Collapse Dependencies" if is_expanded else "Expand Dependencies")
+        self.load_mods()  # Reload module list to update display
 
     def load_mods(self):
         with SessionLocal() as db:
@@ -695,7 +698,7 @@ class MainWindow(QMainWindow):
             is_expanded = self.expand_button.isChecked()
 
             for i, mod in enumerate(mods):
-                # 建立表格項目並設定為不可編輯
+                # Create table items and set them as non-editable
                 name_item = QTableWidgetItem(mod.name)
                 name_item.setFlags(name_item.flags() & ~Qt.ItemFlag.ItemIsEditable)
                 self.mod_table.setItem(i, 0, name_item)
@@ -704,19 +707,19 @@ class MainWindow(QMainWindow):
                 category_item.setFlags(category_item.flags() & ~Qt.ItemFlag.ItemIsEditable)
                 self.mod_table.setItem(i, 1, category_item)
 
-                translated_item = QTableWidgetItem("是" if mod.is_translated else "否")
+                translated_item = QTableWidgetItem("Yes" if mod.is_translated else "No")
                 translated_item.setFlags(translated_item.flags() & ~Qt.ItemFlag.ItemIsEditable)
                 self.mod_table.setItem(i, 2, translated_item)
 
-                client_item = QTableWidgetItem("是" if mod.client_required else "否")
+                client_item = QTableWidgetItem("Yes" if mod.client_required else "No")
                 client_item.setFlags(client_item.flags() & ~Qt.ItemFlag.ItemIsEditable)
                 self.mod_table.setItem(i, 3, client_item)
 
-                server_item = QTableWidgetItem("是" if mod.server_required else "否")
+                server_item = QTableWidgetItem("Yes" if mod.server_required else "No")
                 server_item.setFlags(server_item.flags() & ~Qt.ItemFlag.ItemIsEditable)
                 self.mod_table.setItem(i, 4, server_item)
 
-                # 根據展開狀態顯示前置模組
+                # Show dependencies based on expand state
                 if is_expanded:
                     dependencies_text = "\n".join(f"• {d.name}" for d in mod.dependencies) if mod.dependencies else ""
                 else:
@@ -724,7 +727,7 @@ class MainWindow(QMainWindow):
 
                 dependency_item = QTableWidgetItem(dependencies_text)
                 dependency_item.setFlags(dependency_item.flags() & ~Qt.ItemFlag.ItemIsEditable)
-                # 設定文字對齊方式為靠左對齊且垂直置頂
+                # Set text alignment to left and vertically top
                 dependency_item.setTextAlignment(Qt.AlignmentFlag.AlignLeft | Qt.AlignmentFlag.AlignTop)
                 self.mod_table.setItem(i, 5, dependency_item)
 
@@ -732,18 +735,18 @@ class MainWindow(QMainWindow):
                 filename_item.setFlags(filename_item.flags() & ~Qt.ItemFlag.ItemIsEditable)
                 self.mod_table.setItem(i, 6, filename_item)
 
-                # 調整行高
+                # Adjust row height
                 if is_expanded and mod.dependencies:
-                    # 每個依賴項目至少 30 像素高
+                    # Each dependency item should be at least 30 pixels high
                     row_height = 30 * len(mod.dependencies)
                     self.mod_table.setRowHeight(i, max(30, row_height))
                 else:
                     self.mod_table.setRowHeight(i, 30)
 
-            # 更新狀態列
+            # Update status bar
             status_bar: QStatusBar | None = self.statusBar()
             if status_bar:
-                status_bar.showMessage(f"共 {len(mods)} 個模組")
+                status_bar.showMessage(f"Total {len(mods)} modules")
 
     def add_mod(self):
         dialog = ModDialog(self)
@@ -760,109 +763,110 @@ class MainWindow(QMainWindow):
                     db.add(category)
                     db.commit()
                     db.refresh(category)
-                self.load_mods()  # 重新載入模組列表以更新分類
+                self.load_mods()  # Reload module list to update categories
 
     def edit_mod(self):
-        # 獲取選中的行
+        # Get selected row
         current_row = self.mod_table.currentRow()
         if current_row < 0:
-            QMessageBox.warning(self, "警告", "請先選擇一個模組")
+            QMessageBox.warning(self, "Warning", "Please select a module")
             return
 
-        # 獲取模組名稱
+        # Get module name
         name_item = self.mod_table.item(current_row, 0)
         if not name_item:
-            QMessageBox.warning(self, "錯誤", "無法獲取模組名稱")
+            QMessageBox.warning(self, "Error", "Unable to get module name")
             return
 
         mod_name = name_item.text()
         if not mod_name:
-            QMessageBox.warning(self, "錯誤", "模組名稱為空")
+            QMessageBox.warning(self, "Error", "Module name is empty")
             return
 
-        # 從資料庫中獲取模組
+        # Get module from database
         with SessionLocal() as db:
             mod = db.query(Mod).filter(Mod.name == mod_name).first()
             if not mod:
-                QMessageBox.warning(self, "錯誤", "找不到選擇的模組")
+                QMessageBox.warning(self, "Error", "Module not found")
                 return
 
-            # 開啟編輯對話框
+            # Open edit dialog
             dialog = ModDialog(self, mod)
             if dialog.exec():
-                self.load_mods()  # 重新載入模組列表
+                self.load_mods()  # Reload module list
 
     def delete_mod(self):
-        # 獲取選中的行
+        # Get selected row
         current_row = self.mod_table.currentRow()
         if current_row < 0:
-            QMessageBox.warning(self, "警告", "請先選擇一個模組")
+            QMessageBox.warning(self, "Warning", "Please select a module")
             return
 
-        # 獲取模組名稱
+        # Get module name
         name_item = self.mod_table.item(current_row, 0)
         if not name_item:
-            QMessageBox.warning(self, "錯誤", "無法獲取模組名稱")
+            QMessageBox.warning(self, "Error", "Unable to get module name")
             return
 
         mod_name = name_item.text()
         if not mod_name:
-            QMessageBox.warning(self, "錯誤", "模組名稱為空")
+            QMessageBox.warning(self, "Error", "Module name is empty")
             return
 
         with SessionLocal() as db:
             mod = db.query(Mod).filter(Mod.name == mod_name).first()
             if not mod:
-                QMessageBox.warning(self, "錯誤", "找不到選擇的模組")
+                QMessageBox.warning(self, "Error", "Module not found")
                 return
 
-            # 檢查是否有其他模組依賴此模組
+            # Check if other modules depend on this module
             dependent_mods = db.query(Mod).filter(Mod.dependencies.any(id=mod.id)).all()
             if dependent_mods:
-                # 如果有依賴，顯示警告訊息並列出依賴此模組的其他模組
+                # If there are dependencies, show warning message and list modules that depend on this one
                 dependent_names = ", ".join([m.name for m in dependent_mods])
                 QMessageBox.warning(
                     self,
-                    "無法刪除",
-                    f"無法刪除模組「{mod_name}」，因為以下模組依賴它：\n{dependent_names}",
+                    "Unable to Delete",
+                    f'Unable to delete module "{mod_name}", '
+                    + f"because the following modules depend on it:\n{dependent_names}",
                 )
                 return
 
-            # 確認是否要刪除
+            # Confirm whether to delete
             reply = QMessageBox.question(
                 self,
-                "確認刪除",
-                f"確定要刪除模組「{mod_name}」嗎？\n注意：這將同時刪除模組檔案。",
+                "Confirm Delete",
+                f'Are you sure you want to delete module "{mod_name}"?\nNote: This will also delete the module file.',
                 QMessageBox.StandardButton.Yes | QMessageBox.StandardButton.No,
             )
 
             if reply == QMessageBox.StandardButton.Yes:
-                # 刪除檔案
+                # Delete file
                 try:
                     file_path = Path("mods") / mod.filename
                     if file_path.exists():
                         file_path.unlink()
                 except Exception as e:
-                    QMessageBox.critical(self, "錯誤", f"刪除檔案時發生錯誤：{str(e)}")
+                    QMessageBox.critical(self, "Error", f"Error deleting file: {str(e)}")
                     return
 
-                # 從資料庫中刪除
+                # Delete from database
                 db.delete(mod)
                 db.commit()
-                self.load_mods()  # 重新載入模組列表
+                self.load_mods()  # Reload module list
 
     def showEvent(self, event):  # noqa: N802 (This is special method of Qt)
-        """當視窗顯示時設定初始欄位寬度"""
+        """When window is shown, set initial column widths"""
         super().showEvent(event)
         header = self.mod_table.horizontalHeader()
         viewport = self.mod_table.viewport()
         if header and viewport:
-            # 設定所有欄位初始等寬
+            # Set all columns initial equal width
             total_width = viewport.width()
             column_width = total_width // self.mod_table.columnCount()
             for i in range(self.mod_table.columnCount()):
                 header.resizeSection(i, column_width)
-            # 儲存初始的欄位寬度比例
+            # Store initial column width ratios
             self.update_column_ratios()
 
 

@@ -3,7 +3,7 @@ from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from database import Base
 
-# 模組與分類的多對多關聯表
+# Many-to-many relationship table between mods and categories
 mod_category = Table(
     "mod_category",
     Base.metadata,
@@ -11,7 +11,7 @@ mod_category = Table(
     Column("category_id", Integer, ForeignKey("categories.id")),
 )
 
-# 模組與前置的多對多關聯表
+# Many-to-many relationship table between mods and dependencies
 mod_dependency = Table(
     "mod_dependency",
     Base.metadata,
@@ -38,7 +38,7 @@ class Mod(Base):
     server_required: Mapped[bool] = mapped_column(Boolean, default=True)
     filename: Mapped[str] = mapped_column(String)
 
-    # 關聯
+    # Relationships
     categories: Mapped[list[Category]] = relationship(secondary=mod_category, back_populates="mods")
     dependencies: Mapped[list["Mod"]] = relationship(
         secondary=mod_dependency,

@@ -15,7 +15,7 @@ A desktop application for managing Minecraft mods and their dependencies with a 
 
 ## Requirements
 
-- Python 3.8+
+- Python 3.13+
 - PyQt6
 - SQLAlchemy
 - PDM (Python package manager)

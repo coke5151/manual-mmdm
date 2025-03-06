@@ -28,8 +28,10 @@ from PyQt6.QtWidgets import (
     QWidget,
 )
 
+from config import load_config, save_config
 from database import SessionLocal, engine
 from models import Base, Category, Mod
+from translations import TRANSLATIONS
 
 # Create tables
 Base.metadata.create_all(bind=engine)
@@ -40,7 +42,8 @@ class ModDialog(QDialog):
         super().__init__(parent)
         self.mod = mod
         self.last_selected_file = None
-        self.setWindowTitle("Add/Edit Mod")
+        self.translations = parent.translations if parent else TRANSLATIONS["en"]
+        self.setWindowTitle(self.translations["add_edit_mod_title"])
         self.setup_ui()
 
     def setup_ui(self):
@@ -48,21 +51,21 @@ class ModDialog(QDialog):
 
         # Module name
         name_layout = QHBoxLayout()
-        name_layout.addWidget(QLabel("Module Name:"))
+        name_layout.addWidget(QLabel(self.translations["label_module_name"]))
         self.name_edit = QLineEdit()
         name_layout.addWidget(self.name_edit)
         layout.addLayout(name_layout)
 
         # File selection
         file_layout = QHBoxLayout()
-        file_layout.addWidget(QLabel("Module File:"))
+        file_layout.addWidget(QLabel(self.translations["label_module_file"]))
         self.filename_edit = QLineEdit()
         # If in edit mode, allow editing file name
         if self.mod:
             self.filename_edit.setReadOnly(False)
         else:
             self.filename_edit.setReadOnly(True)
-            browse_button = QPushButton("Browse...")
+            browse_button = QPushButton(self.translations["button_browse"])
             browse_button.clicked.connect(self.browse_file)
             file_layout.addWidget(browse_button)
         file_layout.addWidget(self.filename_edit)
@@ -70,25 +73,25 @@ class ModDialog(QDialog):
 
         # Categories
         category_layout = QHBoxLayout()
-        category_layout.addWidget(QLabel("Category:"))
+        category_layout.addWidget(QLabel(self.translations["label_category"]))
         self.category_combo = QComboBox()
         self.load_categories()
         category_layout.addWidget(self.category_combo)
-        manage_category_button = QPushButton("Manage Categories...")
+        manage_category_button = QPushButton(self.translations["menu_manage_categories"])
         manage_category_button.clicked.connect(self.manage_categories)
         category_layout.addWidget(manage_category_button)
         layout.addLayout(category_layout)
 
         # Options
-        self.is_translated = QCheckBox("Translated")
-        self.client_required = QCheckBox("Client Required")
-        self.server_required = QCheckBox("Server Required")
+        self.is_translated = QCheckBox(self.translations["check_translated"])
+        self.client_required = QCheckBox(self.translations["check_client_required"])
+        self.server_required = QCheckBox(self.translations["check_server_required"])
         layout.addWidget(self.is_translated)
         layout.addWidget(self.client_required)
         layout.addWidget(self.server_required)
 
         # Dependencies
-        dependency_label = QLabel("Dependencies:")
+        dependency_label = QLabel(self.translations["label_dependencies"])
         layout.addWidget(dependency_label)
 
         # Create horizontal layout for lists and buttons
@@ -96,7 +99,7 @@ class ModDialog(QDialog):
 
         # Available modules list
         available_layout = QVBoxLayout()
-        available_layout.addWidget(QLabel("Available Modules:"))
+        available_layout.addWidget(QLabel(self.translations["label_available_modules"]))
         self.available_list = QListWidget()
         self.available_list.setSelectionMode(QListWidget.SelectionMode.MultiSelection)
         self.available_list.setStyleSheet("""
@@ -160,7 +163,7 @@ class ModDialog(QDialog):
 
         # Selected modules list
         selected_layout = QVBoxLayout()
-        selected_layout.addWidget(QLabel("Selected:"))
+        selected_layout.addWidget(QLabel(self.translations["label_selected"]))
         self.selected_list = QListWidget()
         self.selected_list.setSelectionMode(QListWidget.SelectionMode.MultiSelection)
         self.selected_list.setStyleSheet("""
@@ -192,9 +195,9 @@ class ModDialog(QDialog):
 
         # Buttons
         button_layout = QHBoxLayout()
-        save_button = QPushButton("Save")
+        save_button = QPushButton(self.translations["button_save"])
         save_button.clicked.connect(self.accept)
-        cancel_button = QPushButton("Cancel")
+        cancel_button = QPushButton(self.translations["button_cancel"])
         cancel_button.clicked.connect(self.reject)
         button_layout.addWidget(save_button)
         button_layout.addWidget(cancel_button)
@@ -221,7 +224,10 @@ class ModDialog(QDialog):
 
     def browse_file(self):
         file_path, _ = QFileDialog.getOpenFileName(
-            self, "Choose Module File", "", "Minecraft Module Files (*.jar);;All Files (*.*)"
+            self,
+            self.translations["dialog_choose_mod"],
+            "",
+            self.translations["dialog_mod_filter"],
         )
         if file_path:
             # Store selected file path
@@ -283,7 +289,11 @@ class ModDialog(QDialog):
         filename = self.filename_edit.text()
 
         if not name or not filename:
-            QMessageBox.warning(self, "Error", "Module name and file name cannot be empty")
+            QMessageBox.warning(
+                self,
+                self.translations["title_error"],
+                self.translations["msg_name_file_empty"],
+            )
             return
 
         # Ensure file name has .jar extension
@@ -328,11 +338,19 @@ class ModDialog(QDialog):
                 try:
                     if old_path != new_path:  # Only rename when filename actually changes
                         if new_path.exists():
-                            QMessageBox.warning(self, "Error", f"File {filename} already exists")
+                            QMessageBox.warning(
+                                self,
+                                self.translations["title_error"],
+                                self.translations["msg_file_exists"].format(filename),
+                            )
                             return
                         old_path.rename(new_path)
                 except Exception as e:
-                    QMessageBox.critical(self, "Error", f"Error renaming file: {str(e)}")
+                    QMessageBox.critical(
+                        self,
+                        self.translations["title_error"],
+                        self.translations["msg_error_rename_file"].format(str(e)),
+                    )
                     return
 
             else:
@@ -341,11 +359,19 @@ class ModDialog(QDialog):
                 try:
                     source_path = self.last_selected_file
                     if not source_path:
-                        QMessageBox.warning(self, "Error", "Please choose module file")
+                        QMessageBox.warning(
+                            self,
+                            self.translations["title_warning"],
+                            self.translations["msg_choose_module_file"],
+                        )
                         return
                     shutil.copy2(source_path, target_path)
                 except Exception as e:
-                    QMessageBox.critical(self, "Error", f"Error copying file: {str(e)}")
+                    QMessageBox.critical(
+                        self,
+                        self.translations["title_error"],
+                        self.translations["msg_error_copy_file"].format(str(e)),
+                    )
                     return
 
                 # Add module
@@ -384,7 +410,10 @@ class CategoryDialog(QDialog):
     def __init__(self, parent=None, category=None):
         super().__init__(parent)
         self.category = category
-        self.setWindowTitle("Add Category" if not category else "Edit Category")
+        self.translations = parent.translations if parent else TRANSLATIONS["en"]
+        self.setWindowTitle(
+            self.translations["add_category_title"] if not category else self.translations["edit_category_title"]
+        )
         self.setup_ui()
 
     def setup_ui(self):
@@ -392,16 +421,16 @@ class CategoryDialog(QDialog):
 
         # Category name
         name_layout = QHBoxLayout()
-        name_layout.addWidget(QLabel("Category Name:"))
+        name_layout.addWidget(QLabel(self.translations["label_category_name"]))
         self.name_edit = QLineEdit()
         name_layout.addWidget(self.name_edit)
         layout.addLayout(name_layout)
 
         # Buttons
         button_layout = QHBoxLayout()
-        save_button = QPushButton("Save")
+        save_button = QPushButton(self.translations["button_save"])
         save_button.clicked.connect(self.accept)
-        cancel_button = QPushButton("Cancel")
+        cancel_button = QPushButton(self.translations["button_cancel"])
         cancel_button.clicked.connect(self.reject)
         button_layout.addWidget(save_button)
         button_layout.addWidget(cancel_button)
@@ -419,7 +448,8 @@ class CategoryDialog(QDialog):
 class CategoryManagerDialog(QDialog):
     def __init__(self, parent=None):
         super().__init__(parent)
-        self.setWindowTitle("Manage Categories")
+        self.translations = parent.translations if parent else TRANSLATIONS["en"]
+        self.setWindowTitle(self.translations["manage_categories_title"])
         self.setup_ui()
         self.load_categories()
 
@@ -432,13 +462,13 @@ class CategoryManagerDialog(QDialog):
 
         # Buttons
         button_layout = QHBoxLayout()
-        add_button = QPushButton("Add")
+        add_button = QPushButton(self.translations["button_add"])
         add_button.clicked.connect(self.add_category)
-        edit_button = QPushButton("Edit")
+        edit_button = QPushButton(self.translations["button_edit"])
         edit_button.clicked.connect(self.edit_category)
-        delete_button = QPushButton("Delete")
+        delete_button = QPushButton(self.translations["button_delete"])
         delete_button.clicked.connect(self.delete_category)
-        close_button = QPushButton("Close")
+        close_button = QPushButton(self.translations["button_close"])
         close_button.clicked.connect(self.accept)
         button_layout.addWidget(add_button)
         button_layout.addWidget(edit_button)
@@ -469,7 +499,11 @@ class CategoryManagerDialog(QDialog):
     def edit_category(self):
         current_item = self.category_list.currentItem()
         if not current_item:
-            QMessageBox.warning(self, "Warning", "Please select a category")
+            QMessageBox.warning(
+                self,
+                self.translations["title_warning"],
+                self.translations["msg_select_category"],
+            )
             return
 
         with SessionLocal() as db:
@@ -486,14 +520,17 @@ class CategoryManagerDialog(QDialog):
     def delete_category(self):
         current_item = self.category_list.currentItem()
         if not current_item:
-            QMessageBox.warning(self, "Warning", "Please select a category")
+            QMessageBox.warning(
+                self,
+                self.translations["title_warning"],
+                self.translations["msg_select_category"],
+            )
             return
 
         reply = QMessageBox.question(
             self,
-            "Confirm Delete",
-            f'Are you sure you want to delete category "{current_item.text()}"?\n'
-            + "Note: This will remove all modules associated with this category.",
+            self.translations["title_confirm_delete"],
+            self.translations["msg_confirm_delete_category"].format(current_item.text()),
             QMessageBox.StandardButton.Yes | QMessageBox.StandardButton.No,
         )
 
@@ -509,7 +546,11 @@ class CategoryManagerDialog(QDialog):
 class MainWindow(QMainWindow):
     def __init__(self):
         super().__init__()
-        self.setWindowTitle("Minecraft Module Manager")
+        # Load saved language from config
+        self.config = load_config()
+        self.current_language = self.config.get("language", "en")
+        self.translations = TRANSLATIONS[self.current_language]  # Translation dictionary
+        self.setWindowTitle(self.translations["main_window_title"])
         # Set default window size
         self.resize(800, 600)
         self.setup_ui()
@@ -522,33 +563,52 @@ class MainWindow(QMainWindow):
             return
 
         # File menu
-        file_menu: QMenu | None = menubar.addMenu("File")
+        file_menu: QMenu | None = menubar.addMenu(self.translations["menu_file"])
         if not file_menu:
             return
-        add_mod_action: QAction | None = file_menu.addAction("Add Module")
+        add_mod_action: QAction | None = file_menu.addAction(self.translations["menu_add_mod"])
         if add_mod_action:
             add_mod_action.triggered.connect(self.add_mod)
-        edit_mod_action: QAction | None = file_menu.addAction("Edit Module")
+        edit_mod_action: QAction | None = file_menu.addAction(self.translations["menu_edit_mod"])
         if edit_mod_action:
             edit_mod_action.triggered.connect(self.edit_mod)
-        delete_mod_action: QAction | None = file_menu.addAction("Delete Module")
+        delete_mod_action: QAction | None = file_menu.addAction(self.translations["menu_delete_mod"])
         if delete_mod_action:
             delete_mod_action.triggered.connect(self.delete_mod)
         file_menu.addSeparator()
-        exit_action: QAction | None = file_menu.addAction("Exit")
+        exit_action: QAction | None = file_menu.addAction(self.translations["menu_exit"])
         if exit_action:
             exit_action.triggered.connect(self.close)
 
         # Management menu
-        manage_menu: QMenu | None = menubar.addMenu("Manage")
+        manage_menu: QMenu | None = menubar.addMenu(self.translations["menu_manage"])
         if not manage_menu:
             return
-        add_category_action: QAction | None = manage_menu.addAction("Add Category")
+        add_category_action: QAction | None = manage_menu.addAction(self.translations["menu_add_category"])
         if add_category_action:
             add_category_action.triggered.connect(self.add_category)
-        manage_categories_action: QAction | None = manage_menu.addAction("Manage Categories")
+        manage_categories_action: QAction | None = manage_menu.addAction(self.translations["menu_manage_categories"])
         if manage_categories_action:
             manage_categories_action.triggered.connect(self.manage_categories)
+
+        # Language menu
+        language_menu: QMenu | None = menubar.addMenu(self.translations["menu_language"])
+        if language_menu:
+            english_action: QAction = QAction("English", self)
+            english_action.setCheckable(True)
+            english_action.setChecked(self.current_language == "en")
+            english_action.triggered.connect(lambda: self.change_language("en"))
+            language_menu.addAction(english_action)
+
+            chinese_action: QAction = QAction("繁體中文", self)
+            chinese_action.setCheckable(True)
+            chinese_action.setChecked(self.current_language == "zh_TW")
+            chinese_action.triggered.connect(lambda: self.change_language("zh_TW"))
+            language_menu.addAction(chinese_action)
+
+            language_menu.triggered.connect(
+                lambda action: self.update_language_menu(action, [english_action, chinese_action])
+            )
 
         # Main content area
         central_widget = QWidget()
@@ -559,17 +619,17 @@ class MainWindow(QMainWindow):
         button_layout = QHBoxLayout()
 
         # Add module button
-        add_button = QPushButton("Add Module")
+        add_button = QPushButton(self.translations["menu_add_mod"])
         add_button.clicked.connect(self.add_mod)
         button_layout.addWidget(add_button)
 
         # Edit module button
-        edit_button = QPushButton("Edit Module")
+        edit_button = QPushButton(self.translations["menu_edit_mod"])
         edit_button.clicked.connect(self.edit_mod)
         button_layout.addWidget(edit_button)
 
         # Delete module button
-        delete_button = QPushButton("Delete Module")
+        delete_button = QPushButton(self.translations["menu_delete_mod"])
         delete_button.clicked.connect(self.delete_mod)
         button_layout.addWidget(delete_button)
 
@@ -577,8 +637,8 @@ class MainWindow(QMainWindow):
         button_layout.addStretch()
 
         # Expand/collapse button
-        self.expand_button = QPushButton("Expand Dependencies")
-        self.expand_button.setCheckable(True)  # Make button toggleable
+        self.expand_button = QPushButton(self.translations["button_expand_deps"])
+        self.expand_button.setCheckable(True)
         self.expand_button.clicked.connect(self.toggle_dependencies)
         button_layout.addWidget(self.expand_button)
 
@@ -586,7 +646,7 @@ class MainWindow(QMainWindow):
         button_layout.addStretch()
 
         # Manage categories button
-        manage_categories_button = QPushButton("Manage Categories")
+        manage_categories_button = QPushButton(self.translations["menu_manage_categories"])
         manage_categories_button.clicked.connect(self.manage_categories)
         button_layout.addWidget(manage_categories_button)
 
@@ -594,7 +654,7 @@ class MainWindow(QMainWindow):
 
         # Search bar
         search_layout = QHBoxLayout()
-        search_layout.addWidget(QLabel("Search:"))
+        search_layout.addWidget(QLabel(self.translations["label_search"]))
         self.search_edit = QLineEdit()
         self.search_edit.textChanged.connect(self.filter_mods)
         search_layout.addWidget(self.search_edit)
@@ -603,11 +663,10 @@ class MainWindow(QMainWindow):
         # Module list
         self.mod_table = QTableWidget()
         self.mod_table.setColumnCount(7)
-        self.mod_table.setHorizontalHeaderLabels(
-            ["Module Name", "Category", "Translated", "Client", "Server", "Dependencies", "File Name"]
-        )
+        self.update_table_headers()
         self.mod_table.setSelectionBehavior(QTableWidget.SelectionBehavior.SelectRows)
         self.mod_table.setSelectionMode(QTableWidget.SelectionMode.SingleSelection)
+
         # Set table to auto-adjust width
         header = self.mod_table.horizontalHeader()
         if header:
@@ -644,7 +703,92 @@ class MainWindow(QMainWindow):
         # Status bar
         status_bar: QStatusBar | None = self.statusBar()
         if status_bar:
-            status_bar.showMessage("Ready")
+            status_bar.showMessage(self.translations["msg_ready"])
+
+    def update_table_headers(self):
+        """Update table headers with current language"""
+        self.mod_table.setHorizontalHeaderLabels(
+            [
+                self.translations["header_module_name"],
+                self.translations["header_category"],
+                self.translations["header_translated"],
+                self.translations["header_client"],
+                self.translations["header_server"],
+                self.translations["header_dependencies"],
+                self.translations["header_filename"],
+            ]
+        )
+
+    def update_language_menu(self, triggered_action: QAction, actions: list[QAction]) -> None:
+        """Update language menu checkmarks"""
+        for action in actions:
+            if action != triggered_action:
+                action.setChecked(False)
+
+    def change_language(self, language: str) -> None:
+        """Change the application language"""
+        if language != self.current_language:
+            self.current_language = language
+            self.translations = TRANSLATIONS[language]
+            # Save language setting to config
+            self.config["language"] = language
+            save_config(self.config)
+            self.retranslate_ui()
+
+    def retranslate_ui(self) -> None:
+        """Update all UI elements with new language"""
+        # Update window title
+        self.setWindowTitle(self.translations["main_window_title"])
+
+        # Update menu items
+        menubar = self.menuBar()
+        if menubar:
+            menus = menubar.findChildren(QMenu)
+            for menu in menus:
+                if menu.title() in ["File", "檔案"]:
+                    menu.setTitle(self.translations["menu_file"])
+                elif menu.title() in ["Manage", "管理"]:
+                    menu.setTitle(self.translations["menu_manage"])
+                elif menu.title() in ["Language", "語言"]:
+                    menu.setTitle(self.translations["menu_language"])
+
+        # Update buttons
+        for button in self.findChildren(QPushButton):
+            if button == self.expand_button:
+                button.setText(
+                    self.translations["button_expand_deps"]
+                    if not button.isChecked()
+                    else self.translations["button_collapse_deps"]
+                )
+            elif button.text() in ["Add Module", "新增模組"]:
+                button.setText(self.translations["menu_add_mod"])
+            elif button.text() in ["Edit Module", "編輯模組"]:
+                button.setText(self.translations["menu_edit_mod"])
+            elif button.text() in ["Delete Module", "刪除模組"]:
+                button.setText(self.translations["menu_delete_mod"])
+            elif button.text() in ["Manage Categories", "管理分類"]:
+                button.setText(self.translations["menu_manage_categories"])
+
+        # Update labels
+        for label in self.findChildren(QLabel):
+            if label.text() in ["Search:", "搜尋:"]:
+                label.setText(self.translations["label_search"])
+
+        # Update table headers
+        self.update_table_headers()
+
+        # Update status bar
+        status_bar = self.statusBar()
+        if status_bar:
+            current_text = status_bar.currentMessage()
+            if current_text in ["Ready", "就緒"]:
+                status_bar.showMessage(self.translations["msg_ready"])
+            elif "Total" in current_text or "共" in current_text:
+                count = len([i for i in range(self.mod_table.rowCount()) if not self.mod_table.isRowHidden(i)])
+                status_bar.showMessage(self.translations["msg_total_mods"].format(count))
+
+        # Refresh table contents
+        self.load_mods()
 
     def update_column_ratios(self):
         """Update column width ratios"""
@@ -688,7 +832,9 @@ class MainWindow(QMainWindow):
 
     def toggle_dependencies(self):
         is_expanded = self.expand_button.isChecked()
-        self.expand_button.setText("Collapse Dependencies" if is_expanded else "Expand Dependencies")
+        self.expand_button.setText(
+            self.translations["button_collapse_deps"] if is_expanded else self.translations["button_expand_deps"]
+        )
         self.load_mods()  # Reload module list to update display
 
     def load_mods(self):
@@ -707,15 +853,21 @@ class MainWindow(QMainWindow):
                 category_item.setFlags(category_item.flags() & ~Qt.ItemFlag.ItemIsEditable)
                 self.mod_table.setItem(i, 1, category_item)
 
-                translated_item = QTableWidgetItem("Yes" if mod.is_translated else "No")
+                translated_item = QTableWidgetItem(
+                    self.translations["msg_yes"] if mod.is_translated else self.translations["msg_no"]
+                )
                 translated_item.setFlags(translated_item.flags() & ~Qt.ItemFlag.ItemIsEditable)
                 self.mod_table.setItem(i, 2, translated_item)
 
-                client_item = QTableWidgetItem("Yes" if mod.client_required else "No")
+                client_item = QTableWidgetItem(
+                    self.translations["msg_yes"] if mod.client_required else self.translations["msg_no"]
+                )
                 client_item.setFlags(client_item.flags() & ~Qt.ItemFlag.ItemIsEditable)
                 self.mod_table.setItem(i, 3, client_item)
 
-                server_item = QTableWidgetItem("Yes" if mod.server_required else "No")
+                server_item = QTableWidgetItem(
+                    self.translations["msg_yes"] if mod.server_required else self.translations["msg_no"]
+                )
                 server_item.setFlags(server_item.flags() & ~Qt.ItemFlag.ItemIsEditable)
                 self.mod_table.setItem(i, 4, server_item)
 
@@ -746,7 +898,7 @@ class MainWindow(QMainWindow):
             # Update status bar
             status_bar: QStatusBar | None = self.statusBar()
             if status_bar:
-                status_bar.showMessage(f"Total {len(mods)} modules")
+                status_bar.showMessage(self.translations["msg_total_mods"].format(len(mods)))
 
     def add_mod(self):
         dialog = ModDialog(self)
@@ -769,25 +921,41 @@ class MainWindow(QMainWindow):
         # Get selected row
         current_row = self.mod_table.currentRow()
         if current_row < 0:
-            QMessageBox.warning(self, "Warning", "Please select a module")
+            QMessageBox.warning(
+                self,
+                self.translations["title_warning"],
+                self.translations["msg_select_module"],
+            )
             return
 
         # Get module name
         name_item = self.mod_table.item(current_row, 0)
         if not name_item:
-            QMessageBox.warning(self, "Error", "Unable to get module name")
+            QMessageBox.warning(
+                self,
+                self.translations["title_error"],
+                self.translations["msg_unable_get_name"],
+            )
             return
 
         mod_name = name_item.text()
         if not mod_name:
-            QMessageBox.warning(self, "Error", "Module name is empty")
+            QMessageBox.warning(
+                self,
+                self.translations["title_error"],
+                self.translations["msg_name_empty"],
+            )
             return
 
         # Get module from database
         with SessionLocal() as db:
             mod = db.query(Mod).filter(Mod.name == mod_name).first()
             if not mod:
-                QMessageBox.warning(self, "Error", "Module not found")
+                QMessageBox.warning(
+                    self,
+                    self.translations["title_error"],
+                    self.translations["msg_module_not_found"],
+                )
                 return
 
             # Open edit dialog
@@ -799,24 +967,40 @@ class MainWindow(QMainWindow):
         # Get selected row
         current_row = self.mod_table.currentRow()
         if current_row < 0:
-            QMessageBox.warning(self, "Warning", "Please select a module")
+            QMessageBox.warning(
+                self,
+                self.translations["title_warning"],
+                self.translations["msg_select_module"],
+            )
             return
 
         # Get module name
         name_item = self.mod_table.item(current_row, 0)
         if not name_item:
-            QMessageBox.warning(self, "Error", "Unable to get module name")
+            QMessageBox.warning(
+                self,
+                self.translations["title_error"],
+                self.translations["msg_unable_get_name"],
+            )
             return
 
         mod_name = name_item.text()
         if not mod_name:
-            QMessageBox.warning(self, "Error", "Module name is empty")
+            QMessageBox.warning(
+                self,
+                self.translations["title_error"],
+                self.translations["msg_name_empty"],
+            )
             return
 
         with SessionLocal() as db:
             mod = db.query(Mod).filter(Mod.name == mod_name).first()
             if not mod:
-                QMessageBox.warning(self, "Error", "Module not found")
+                QMessageBox.warning(
+                    self,
+                    self.translations["title_error"],
+                    self.translations["msg_module_not_found"],
+                )
                 return
 
             # Check if other modules depend on this module
@@ -826,17 +1010,16 @@ class MainWindow(QMainWindow):
                 dependent_names = ", ".join([m.name for m in dependent_mods])
                 QMessageBox.warning(
                     self,
-                    "Unable to Delete",
-                    f'Unable to delete module "{mod_name}", '
-                    + f"because the following modules depend on it:\n{dependent_names}",
+                    self.translations["title_unable_delete"],
+                    self.translations["msg_unable_delete"].format(mod_name, dependent_names),
                 )
                 return
 
             # Confirm whether to delete
             reply = QMessageBox.question(
                 self,
-                "Confirm Delete",
-                f'Are you sure you want to delete module "{mod_name}"?\nNote: This will also delete the module file.',
+                self.translations["title_confirm_delete"],
+                self.translations["msg_confirm_delete_mod"].format(mod_name),
                 QMessageBox.StandardButton.Yes | QMessageBox.StandardButton.No,
             )
 
@@ -847,7 +1030,11 @@ class MainWindow(QMainWindow):
                     if file_path.exists():
                         file_path.unlink()
                 except Exception as e:
-                    QMessageBox.critical(self, "Error", f"Error deleting file: {str(e)}")
+                    QMessageBox.critical(
+                        self,
+                        self.translations["title_error"],
+                        self.translations["msg_error_delete_file"].format(str(e)),
+                    )
                     return
 
                 # Delete from database

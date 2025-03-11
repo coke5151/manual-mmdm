@@ -666,6 +666,16 @@ class MainWindow(QMainWindow):
             if export_server_action:
                 export_server_action.triggered.connect(lambda: self.export_mods("server"))
 
+            export_menu.addSeparator()
+
+            export_json_action: QAction | None = export_menu.addAction(self.translations["menu_export_json"])
+            if export_json_action:
+                export_json_action.triggered.connect(self.export_json)
+
+            import_json_action: QAction | None = export_menu.addAction(self.translations["menu_import_json"])
+            if import_json_action:
+                import_json_action.triggered.connect(self.import_json)
+
         # Language menu
         language_menu: QMenu | None = menubar.addMenu(self.translations["menu_language"])
         if language_menu:
@@ -1170,6 +1180,190 @@ class MainWindow(QMainWindow):
             else:
                 error_msg = self.translations["msg_export_failed"].format("\n".join(errors))
                 QMessageBox.critical(self, self.translations["title_error"], error_msg)
+
+    def export_json(self):
+        """Export all categories and mods data to a JSON file."""
+        import json
+
+        # Ask for save location
+        file_path, _ = QFileDialog.getSaveFileName(
+            self,
+            self.translations["dialog_json_export"],
+            "manual-mmdm.json",
+            self.translations["dialog_json_filter"],
+        )
+
+        if not file_path:
+            return
+
+        # Add .json extension if not present
+        if not file_path.lower().endswith(".json"):
+            file_path += ".json"
+
+        try:
+            with SessionLocal() as db:
+                # Get all categories
+                categories = db.query(Category).all()
+                categories_data = []
+
+                for category in categories:
+                    categories_data.append({"name": category.name})
+
+                # Get all mods
+                mods = db.query(Mod).all()
+                mods_data = []
+
+                for mod in mods:
+                    # Get category names
+                    category_names = [c.name for c in mod.categories]
+
+                    # Get dependency names
+                    dependency_names = [d.name for d in mod.dependencies]
+
+                    mods_data.append(
+                        {
+                            "name": mod.name,
+                            "filename": mod.filename,
+                            "is_translated": mod.is_translated,
+                            "client_required": mod.client_required,
+                            "server_required": mod.server_required,
+                            "notes": mod.notes,
+                            "categories": category_names,
+                            "dependencies": dependency_names,
+                        }
+                    )
+
+                # Create export data
+                export_data = {"categories": categories_data, "mods": mods_data}
+
+                # Save to file
+                with open(file_path, "w", encoding="utf-8") as f:
+                    json.dump(export_data, f, ensure_ascii=False, indent=4)
+
+                QMessageBox.information(
+                    self,
+                    self.translations["title_export_success"],
+                    self.translations["msg_json_export_success"].format(file_path),
+                )
+
+        except Exception as e:
+            QMessageBox.critical(
+                self, self.translations["title_error"], self.translations["msg_json_export_failed"].format(str(e))
+            )
+
+    def import_json(self):
+        """Import categories and mods data from a JSON file."""
+        import json
+        from pathlib import Path
+
+        # Ask for file location
+        file_path, _ = QFileDialog.getOpenFileName(
+            self,
+            self.translations["dialog_json_import"],
+            "",
+            self.translations["dialog_json_filter"],
+        )
+
+        if not file_path:
+            return
+
+        # Confirm import
+        confirm = QMessageBox.question(
+            self,
+            self.translations["title_confirm_import"],
+            self.translations["msg_json_import_confirm"],
+            QMessageBox.StandardButton.Yes | QMessageBox.StandardButton.No,
+            QMessageBox.StandardButton.No,
+        )
+
+        if confirm != QMessageBox.StandardButton.Yes:
+            return
+
+        try:
+            # Load JSON data
+            with open(file_path, encoding="utf-8") as f:
+                import_data = json.load(f)
+
+            # Create mods directory if it doesn't exist
+            mods_dir = Path("mods")
+            mods_dir.mkdir(exist_ok=True)
+
+            with SessionLocal() as db:
+                # Clear existing data
+                db.query(Mod).delete()
+                db.query(Category).delete()
+                db.commit()
+
+                # Import categories
+                categories = {}
+                for category_data in import_data.get("categories", []):
+                    category = Category(name=category_data["name"])
+                    db.add(category)
+                    db.flush()  # Flush to get ID
+                    categories[category.name] = category
+
+                # Ensure "Uncategorized" category exists
+                if "Uncategorized" not in categories:
+                    uncategorized = Category(name="Uncategorized")
+                    db.add(uncategorized)
+                    db.flush()
+                    categories["Uncategorized"] = uncategorized
+
+                # Import mods
+                mods = {}
+                for mod_data in import_data.get("mods", []):
+                    mod = Mod(
+                        name=mod_data["name"],
+                        filename=mod_data["filename"],
+                        is_translated=mod_data.get("is_translated", False),
+                        client_required=mod_data.get("client_required", True),
+                        server_required=mod_data.get("server_required", True),
+                        notes=mod_data.get("notes", ""),
+                    )
+
+                    # Add categories
+                    mod_categories = []
+                    for category_name in mod_data.get("categories", []):
+                        if category_name in categories:
+                            mod_categories.append(categories[category_name])
+
+                    if mod_categories:
+                        mod.categories = mod_categories
+                    else:
+                        # If no categories, add to Uncategorized
+                        mod.categories = [categories["Uncategorized"]]
+
+                    db.add(mod)
+                    db.flush()  # Flush to get ID
+                    mods[mod.name] = mod
+
+                # Set dependencies
+                for mod_data in import_data.get("mods", []):
+                    mod = mods.get(mod_data["name"])
+                    if mod:
+                        dependencies = []
+                        for dep_name in mod_data.get("dependencies", []):
+                            if dep_name in mods:
+                                dependencies.append(mods[dep_name])
+                        mod.dependencies = dependencies
+
+                db.commit()
+
+                # Reload mods
+                self.load_mods()
+
+                QMessageBox.information(
+                    self,
+                    self.translations["title_import_success"],
+                    self.translations["msg_json_import_success"].format(
+                        len(import_data.get("categories", [])), len(import_data.get("mods", []))
+                    ),
+                )
+
+        except Exception as e:
+            QMessageBox.critical(
+                self, self.translations["title_error"], self.translations["msg_json_import_failed"].format(str(e))
+            )
 
     def showEvent(self, event):  # noqa: N802 (This is special method of Qt)
         """When window is shown, set initial column widths"""

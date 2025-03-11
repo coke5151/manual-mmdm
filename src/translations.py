@@ -21,6 +21,8 @@ TRANSLATIONS = {
         "menu_export": "Export",
         "menu_export_client": "Export Client Mods",
         "menu_export_server": "Export Server Mods",
+        "menu_export_json": "Export to JSON",
+        "menu_import_json": "Import from JSON",
         # Buttons
         "button_browse": "Browse...",
         "button_save": "Save",
@@ -78,6 +80,11 @@ TRANSLATIONS = {
         "msg_export_success": "Successfully exported {} modules to {}",
         "msg_export_failed": "Failed to export modules: {}",
         "msg_no_mods_found": "No {} mods found.",
+        "msg_json_export_success": "Successfully exported data to {}",
+        "msg_json_export_failed": "Failed to export data: {}",
+        "msg_json_import_success": "Successfully imported {} categories and {} modules",
+        "msg_json_import_failed": "Failed to import data: {}",
+        "msg_json_import_confirm": "Importing will replace all existing data. Continue?",
         "msg_yes": "Yes",
         "msg_no": "No",
         # Dialog titles
@@ -86,9 +93,14 @@ TRANSLATIONS = {
         "title_confirm_delete": "Confirm Delete",
         "title_unable_delete": "Unable to Delete",
         "title_export_success": "Export Successful",
+        "title_import_success": "Import Successful",
+        "title_confirm_import": "Confirm Import",
         # File dialog
         "dialog_choose_mod": "Choose Module File",
         "dialog_mod_filter": "Minecraft Module Files (*.jar);;All Files (*.*)",
+        "dialog_json_export": "Export Data to JSON",
+        "dialog_json_import": "Import Data from JSON",
+        "dialog_json_filter": "JSON Files (*.json);;All Files (*.*)",
     },
     "zh_TW": {
         # Window titles
@@ -110,6 +122,8 @@ TRANSLATIONS = {
         "menu_export": "匯出",
         "menu_export_client": "匯出客戶端模組",
         "menu_export_server": "匯出伺服端模組",
+        "menu_export_json": "匯出至JSON",
+        "menu_import_json": "從JSON匯入",
         # Buttons
         "button_browse": "瀏覽...",
         "button_save": "儲存",
@@ -118,13 +132,13 @@ TRANSLATIONS = {
         "button_add": "新增",
         "button_edit": "編輯",
         "button_delete": "刪除",
-        "button_expand_deps": "展開相依性",
-        "button_collapse_deps": "收合相依性",
+        "button_expand_deps": "展開依賴項",
+        "button_collapse_deps": "折疊依賴項",
         # Labels
         "label_module_name": "模組名稱:",
         "label_module_file": "模組檔案:",
         "label_category": "分類:",
-        "label_dependencies": "相依性:",
+        "label_dependencies": "依賴:",
         "label_available_modules": "可用模組:",
         "label_selected": "已選取:",
         "label_search": "搜尋:",
@@ -143,8 +157,8 @@ TRANSLATIONS = {
         "header_notes": "備註",
         # Checkboxes
         "check_translated": "已翻譯",
-        "check_client_required": "需要客戶端",
-        "check_server_required": "需要伺服器",
+        "check_client_required": "客戶端需裝",
+        "check_server_required": "伺服器需裝",
         # Messages
         "msg_ready": "就緒",
         "msg_total_mods": "共 {} 個模組",
@@ -165,6 +179,11 @@ TRANSLATIONS = {
         "msg_export_success": "成功匯出 {} 個模組到 {}",
         "msg_export_failed": "匯出模組失敗：{}",
         "msg_no_mods_found": "找不到 {} 模組。",
+        "msg_json_export_success": "成功匯出資料至 {}",
+        "msg_json_export_failed": "匯出資料失敗：{}",
+        "msg_json_import_success": "成功匯入 {} 個分類和 {} 個模組",
+        "msg_json_import_failed": "匯入資料失敗：{}",
+        "msg_json_import_confirm": "匯入將會取代所有現有資料。是否繼續？",
         "msg_yes": "是",
         "msg_no": "否",
         # Dialog titles
@@ -173,8 +192,13 @@ TRANSLATIONS = {
         "title_confirm_delete": "確認刪除",
         "title_unable_delete": "無法刪除",
         "title_export_success": "匯出成功",
+        "title_import_success": "匯入成功",
+        "title_confirm_import": "確認匯入",
         # File dialog
         "dialog_choose_mod": "選擇模組檔案",
         "dialog_mod_filter": "Minecraft 模組檔案 (*.jar);;所有檔案 (*.*)",
+        "dialog_json_export": "匯出資料至JSON",
+        "dialog_json_import": "從JSON匯入資料",
+        "dialog_json_filter": "JSON檔案 (*.json);;所有檔案 (*.*)",
     },
 }

@@ -252,10 +252,24 @@ class ModDialog(QDialog):
 
     def load_categories(self):
         with SessionLocal() as db:
+            # Ensure "Uncategorized" category exists
+            uncategorized = db.query(Category).filter(Category.name == self.translations["label_uncategorized"]).first()
+            if not uncategorized:
+                uncategorized = Category(name=self.translations["label_uncategorized"])
+                db.add(uncategorized)
+                db.commit()
+
+            # Load all categories
             categories = db.query(Category).all()
             self.category_combo.clear()
             for category in categories:
                 self.category_combo.addItem(category.name)
+
+            # If no category is selected, default to "Uncategorized"
+            if self.category_combo.count() > 0 and not self.mod:
+                uncategorized_index = self.category_combo.findText(self.translations["label_uncategorized"])
+                if uncategorized_index >= 0:
+                    self.category_combo.setCurrentIndex(uncategorized_index)
 
     def load_mods(self):
         with SessionLocal() as db:
@@ -461,6 +475,7 @@ class CategoryManagerDialog(QDialog):
         self.translations = parent.translations if parent else TRANSLATIONS["en"]
         self.setWindowTitle(self.translations["manage_categories_title"])
         self.setup_ui()
+        self.ensure_uncategorized_exists()
         self.load_categories()
 
     def setup_ui(self):
@@ -487,6 +502,15 @@ class CategoryManagerDialog(QDialog):
         layout.addLayout(button_layout)
 
         self.setLayout(layout)
+
+    def ensure_uncategorized_exists(self):
+        """Ensure the "Uncategorized" category exists"""
+        with SessionLocal() as db:
+            uncategorized = db.query(Category).filter(Category.name == self.translations["label_uncategorized"]).first()
+            if not uncategorized:
+                uncategorized = Category(name=self.translations["label_uncategorized"])
+                db.add(uncategorized)
+                db.commit()
 
     def load_categories(self):
         with SessionLocal() as db:
@@ -516,6 +540,15 @@ class CategoryManagerDialog(QDialog):
             )
             return
 
+        # Do not allow editing "Uncategorized"
+        if current_item.text() == self.translations["label_uncategorized"]:
+            QMessageBox.warning(
+                self,
+                self.translations["title_warning"],
+                self.translations["msg_cannot_delete_uncategorized"],
+            )
+            return
+
         with SessionLocal() as db:
             category = db.query(Category).filter(Category.name == current_item.text()).first()
             if category:
@@ -537,6 +570,15 @@ class CategoryManagerDialog(QDialog):
             )
             return
 
+        # Do not allow deleting "Uncategorized"
+        if current_item.text() == self.translations["label_uncategorized"]:
+            QMessageBox.warning(
+                self,
+                self.translations["title_warning"],
+                self.translations["msg_cannot_delete_uncategorized"],
+            )
+            return
+
         reply = QMessageBox.question(
             self,
             self.translations["title_confirm_delete"],
@@ -546,8 +588,20 @@ class CategoryManagerDialog(QDialog):
 
         if reply == QMessageBox.StandardButton.Yes:
             with SessionLocal() as db:
+                # Get the category to delete
                 category = db.query(Category).filter(Category.name == current_item.text()).first()
                 if category:
+                    # Get the "Uncategorized" category
+                    uncategorized = (
+                        db.query(Category).filter(Category.name == self.translations["label_uncategorized"]).first()
+                    )
+
+                    if uncategorized:
+                        # Move all mods in this category to "Uncategorized"
+                        for mod in category.mods:
+                            mod.categories = [uncategorized]
+
+                    # Delete the category
                     db.delete(category)
                     db.commit()
                     self.load_categories()

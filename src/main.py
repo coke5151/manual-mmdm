@@ -655,6 +655,17 @@ class MainWindow(QMainWindow):
         if manage_categories_action:
             manage_categories_action.triggered.connect(self.manage_categories)
 
+        # Export menu
+        export_menu: QMenu | None = menubar.addMenu(self.translations["menu_export"])
+        if export_menu:
+            export_client_action: QAction | None = export_menu.addAction(self.translations["menu_export_client"])
+            if export_client_action:
+                export_client_action.triggered.connect(lambda: self.export_mods("client"))
+
+            export_server_action: QAction | None = export_menu.addAction(self.translations["menu_export_server"])
+            if export_server_action:
+                export_server_action.triggered.connect(lambda: self.export_mods("server"))
+
         # Language menu
         language_menu: QMenu | None = menubar.addMenu(self.translations["menu_language"])
         if language_menu:
@@ -1110,6 +1121,55 @@ class MainWindow(QMainWindow):
                 db.delete(mod)
                 db.commit()
                 self.load_mods()  # Reload module list
+
+    def export_mods(self, mod_type: str):
+        """Export mods to client_mods or server_mods folder based on type."""
+        import shutil
+        from pathlib import Path
+
+        # Create export directory if it doesn't exist
+        export_dir = Path(f"{mod_type}_mods")
+        export_dir.mkdir(exist_ok=True)
+
+        # Get mods based on type
+        with SessionLocal() as db:
+            if mod_type == "client":
+                mods = db.query(Mod).filter(Mod.client_required.is_(True)).all()
+            else:  # server
+                mods = db.query(Mod).filter(Mod.server_required.is_(True)).all()
+
+            if not mods:
+                QMessageBox.information(
+                    self, self.translations["title_error"], self.translations["msg_no_mods_found"].format(mod_type)
+                )
+                return
+
+            # Copy mod files to export directory
+            success_count = 0
+            errors = []
+
+            for mod in mods:
+                source_path = Path("mods") / mod.filename
+                if not source_path.exists():
+                    errors.append(f"File not found: {source_path}")
+                    continue
+
+                try:
+                    # Copy the file to the export directory
+                    shutil.copy2(source_path, export_dir / source_path.name)
+                    success_count += 1
+                except Exception as e:
+                    errors.append(self.translations["msg_error_copy_file"].format(str(e)))
+
+            # Show result message
+            if success_count > 0:
+                success_msg = self.translations["msg_export_success"].format(success_count, export_dir)
+                if errors:
+                    success_msg += "\n\n" + "\n".join(errors)
+                QMessageBox.information(self, self.translations["title_export_success"], success_msg)
+            else:
+                error_msg = self.translations["msg_export_failed"].format("\n".join(errors))
+                QMessageBox.critical(self, self.translations["title_error"], error_msg)
 
     def showEvent(self, event):  # noqa: N802 (This is special method of Qt)
         """When window is shown, set initial column widths"""

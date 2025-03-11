@@ -18,6 +18,9 @@ TRANSLATIONS = {
         "menu_exit": "Exit",
         "menu_add_category": "Add Category",
         "menu_manage_categories": "Manage Categories",
+        "menu_export": "Export",
+        "menu_export_client": "Export Client Mods",
+        "menu_export_server": "Export Server Mods",
         # Buttons
         "button_browse": "Browse...",
         "button_save": "Save",
@@ -72,6 +75,9 @@ TRANSLATIONS = {
         "msg_error_rename_file": "Error renaming file: {}",
         "msg_choose_module_file": "Please choose module file",
         "msg_error_copy_file": "Error copying file: {}",
+        "msg_export_success": "Successfully exported {} modules to {}",
+        "msg_export_failed": "Failed to export modules: {}",
+        "msg_no_mods_found": "No {} mods found.",
         "msg_yes": "Yes",
         "msg_no": "No",
         # Dialog titles
@@ -79,6 +85,7 @@ TRANSLATIONS = {
         "title_warning": "Warning",
         "title_confirm_delete": "Confirm Delete",
         "title_unable_delete": "Unable to Delete",
+        "title_export_success": "Export Successful",
         # File dialog
         "dialog_choose_mod": "Choose Module File",
         "dialog_mod_filter": "Minecraft Module Files (*.jar);;All Files (*.*)",
@@ -100,6 +107,9 @@ TRANSLATIONS = {
         "menu_exit": "結束",
         "menu_add_category": "新增分類",
         "menu_manage_categories": "管理分類",
+        "menu_export": "匯出",
+        "menu_export_client": "匯出客戶端模組",
+        "menu_export_server": "匯出伺服端模組",
         # Buttons
         "button_browse": "瀏覽...",
         "button_save": "儲存",
@@ -152,6 +162,9 @@ TRANSLATIONS = {
         "msg_error_rename_file": "重新命名檔案時發生錯誤：{}",
         "msg_choose_module_file": "請選擇模組檔案",
         "msg_error_copy_file": "複製檔案時發生錯誤：{}",
+        "msg_export_success": "成功匯出 {} 個模組到 {}",
+        "msg_export_failed": "匯出模組失敗：{}",
+        "msg_no_mods_found": "找不到 {} 模組。",
         "msg_yes": "是",
         "msg_no": "否",
         # Dialog titles
@@ -159,6 +172,7 @@ TRANSLATIONS = {
         "title_warning": "警告",
         "title_confirm_delete": "確認刪除",
         "title_unable_delete": "無法刪除",
+        "title_export_success": "匯出成功",
         # File dialog
         "dialog_choose_mod": "選擇模組檔案",
         "dialog_mod_filter": "Minecraft 模組檔案 (*.jar);;所有檔案 (*.*)",

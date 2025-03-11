@@ -211,6 +211,8 @@ pyrightconfig.json
 # database or mods folder
 *.db
 mods/
+client_mods/
+server_mods/
 
 # config file
 config.json

@@ -25,7 +25,6 @@ The workflow builds and packages the application for the following platforms:
 
 ### Windows
 - Windows x64 (64-bit): `manual-mmdm-v1.0.0-windows-x64.zip`
-- Windows x86 (32-bit): `manual-mmdm-v1.0.0-windows-x86.zip`
 
 ### macOS
 - macOS x64 (Intel): `manual-mmdm-v1.0.0-macos-x64.zip`
@@ -42,21 +41,36 @@ The workflow `.github/workflows/release.yml` contains the following jobs:
 
 1. `create-release`: Creates the GitHub release page
 2. `build-windows-x64`: Builds the application for Windows 64-bit
-3. `build-windows-x86`: Builds the application for Windows 32-bit
-4. `build-macos-x64`: Builds the application for macOS Intel
-5. `build-macos-arm64`: Builds the application for macOS Apple Silicon
-6. `build-macos-universal`: Builds the application as a Universal macOS binary
-7. `build-linux-x64`: Builds the application for Linux 64-bit
-8. `build-linux-arm64`: Builds the application for Linux ARM64
+3. `build-macos-x64`: Builds the application for macOS Intel
+4. `build-macos-arm64`: Builds the application for macOS Apple Silicon
+5. `build-macos-universal`: Builds the application as a Universal macOS binary
+6. `build-linux-x64`: Builds the application for Linux 64-bit
+7. `build-linux-arm64`: Builds the application for Linux ARM64
 
-Each platform's build job includes:
-- Installing Python 3.13
-- Installing PDM
-- Installing dependencies
-- Running the build script
-- Verifying the build output
-- Creating a ZIP file
-- Uploading to the release page
+## Known Limitations
+
+### Windows
+Windows x86 (32-bit) builds have been disabled due to PyQt6 compatibility issues with Python 3.13. The specific errors encountered include:
+- `No candidate is found for 'pyqt6-qt6' that matches the environment or hashes`
+- Missing Qt build toolchain (`qmake`) for 32-bit environments
+
+If 32-bit Windows support is critically needed, consider:
+- Using an older Python version (3.10/3.11)
+- Using pre-compiled PyQt6 wheels
+- Setting up a custom build environment with Qt6 SDK installed
+
+### macOS
+macOS builds require special handling due to PyInstaller's issues with Qt framework symbolic links. The workflow uses a custom wrapper script to handle these issues, specifically addressing:
+- `FileExistsError` related to existing symbolic links in Qt frameworks
+- Conflicts between framework `Resources` symbolic links during the collection phase
+
+### Linux
+Linux builds require specific system dependencies for Qt and graphical interfaces. The package names have been updated to match Ubuntu 24.04 (Noble):
+- Replaced `libgl1-mesa-glx` with `libgl1`
+- Replaced `libegl1-mesa` with `libegl1`
+- Added additional dependencies like `libxcb-cursor0`, `libxcb-xkb1` and `libxcb-randr0`
+
+For ARM64 Linux builds, a Docker container is used with QEMU emulation to build natively for the ARM architecture.
 
 ## Troubleshooting
 
@@ -66,4 +80,6 @@ If the workflow fails, check:
 3. Ensure GitHub token permissions are set correctly
 4. Make sure your `build.py` script works on all platforms
 5. For ARM64 builds, verify your dependencies support ARM architecture
-6. For Universal macOS builds, verify your code is compatible with both Intel and Apple Silicon 
+6. For Universal macOS builds, verify your code is compatible with both Intel and Apple Silicon
+7. For macOS builds, watch for framework symbolic link errors in the logs
+8. For Linux builds, verify the correct system dependencies are installed (package names may change between Ubuntu versions) 

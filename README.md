@@ -27,7 +27,6 @@ We provide pre-built binaries for multiple platforms. Visit the [Releases](https
 
 #### Windows
 - Windows x64 (64-bit)
-- Windows x86 (32-bit)
 
 #### macOS
 - macOS Universal (Intel & Apple Silicon)
@@ -99,6 +98,19 @@ git push origin v1.0.0
 ```
 
 This will trigger the automatic build process for all supported platforms.
+
+## Platform Support Notes
+
+### Windows
+Currently, only 64-bit Windows (x64) is supported with Python 3.13 due to PyQt6 compatibility limitations with 32-bit platforms.
+
+### macOS
+All macOS variants are supported:
+- Universal builds work on both Intel and Apple Silicon Macs
+- Architecture-specific builds are available if needed
+
+### Linux
+Both x64 and ARM64 builds are supported through the Docker-based build system.
 
 ## License
 

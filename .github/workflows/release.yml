@@ -8,6 +8,8 @@ on:
 jobs:
   create-release:
     runs-on: ubuntu-latest
+    permissions:
+      contents: write
     outputs:
       upload_url: ${{ steps.create_release.outputs.upload_url }}
       version: ${{ github.ref_name }}
@@ -26,6 +28,8 @@ jobs:
   build-windows-x64:
     needs: create-release
     runs-on: windows-latest
+    permissions:
+      contents: write
     steps:
       - uses: actions/checkout@v3
 
@@ -51,6 +55,12 @@ jobs:
 
       - name: Install dependencies
         run: pdm install
+
+      - name: Clean output directory
+        shell: bash
+        run: |
+          rm -rf dist/ build/
+          mkdir -p dist
 
       - name: Build application
         run: pdm run build
@@ -96,82 +106,15 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
-  build-windows-x86:
-    needs: create-release
-    runs-on: windows-latest
-    steps:
-      - uses: actions/checkout@v3
-
-      - name: Set up Python 3.13
-        uses: actions/setup-python@v4
-        with:
-          python-version: "3.13"
-          cache: "pip"
-          architecture: "x86"
-
-      - name: Install PDM
-        run: |
-          python -m pip install --upgrade pip
-          pip install pdm
-
-      - name: Cache PDM packages
-        uses: actions/cache@v3
-        with:
-          path: .pdm-build
-          key: ${{ runner.os }}-pdm-x86-${{ hashFiles('**/pdm.lock') }}
-          restore-keys: |
-            ${{ runner.os }}-pdm-x86-
-
-      - name: Install dependencies
-        run: pdm install
-
-      - name: Build application
-        run: pdm run build
-
-      - name: Verify build output
-        shell: bash
-        run: |
-          if [ ! -d "dist/manual-mmdm" ]; then
-            echo "Build failed: dist/manual-mmdm directory not found"
-            exit 1
-          fi
-          if [ ! -d "dist/manual-mmdm/_internal" ]; then
-            echo "Build failed: _internal directory not found"
-            exit 1
-          fi
-          if [ ! -d "dist/manual-mmdm/static" ]; then
-            echo "Build failed: static directory not found"
-            exit 1
-          fi
-          if [ ! -f "dist/manual-mmdm/manual-mmdm.exe" ]; then
-            echo "Build failed: manual-mmdm.exe not found"
-            exit 1
-          fi
-          echo "Build output verified successfully"
-
-      - name: Get tag name
-        id: get_tag
-        shell: bash
-        run: echo "TAG=${GITHUB_REF#refs/tags/}" >> $GITHUB_OUTPUT
-
-      - name: Create zip archive
-        shell: bash
-        run: |
-          cd dist
-          7z a manual-mmdm-${{ steps.get_tag.outputs.TAG }}-windows-x86.zip manual-mmdm/_internal manual-mmdm/static manual-mmdm/manual-mmdm.exe
-
-      - name: Upload Release Asset
-        uses: softprops/action-gh-release@v1
-        with:
-          files: dist/manual-mmdm-${{ steps.get_tag.outputs.TAG }}-windows-x86.zip
-          draft: false
-          prerelease: false
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+  # Windows x86 (32-bit) build is currently disabled due to PyQt6 compatibility issues
+  # The error is: "No candidate is found for `pyqt6-qt6` that matches the environment or hashes"
+  # PyQt6 has limited support for 32-bit Windows with Python 3.13
 
   build-macos-x64:
     needs: create-release
     runs-on: macos-latest
+    permissions:
+      contents: write
     steps:
       - uses: actions/checkout@v3
 
@@ -198,8 +141,52 @@ jobs:
       - name: Install dependencies
         run: pdm install
 
+      - name: Clean output directory
+        run: |
+          rm -rf dist/ build/
+          mkdir -p dist
+
+      - name: Modify build script for macOS
+        run: |
+          # Create a temporary build script to fix PyInstaller's Qt framework issues
+          cat > fix_build.py << 'EOF'
+          import os
+          import sys
+          import shutil
+          from pathlib import Path
+
+          # Import the original build module
+          sys.path.insert(0, os.getcwd())
+          from build import build as original_build
+
+          def clean_framework_links():
+              # Clean up directories that might cause symlink conflicts
+              print("Cleaning up potential framework symlink conflicts...")
+              qt_dirs = list(Path('dist').glob('**/Qt*.framework'))
+              for qt_dir in qt_dirs:
+                  resources_dir = qt_dir / 'Resources'
+                  if resources_dir.exists() and resources_dir.is_symlink():
+                      print(f"Removing symlink: {resources_dir}")
+                      resources_dir.unlink()
+
+          def patched_build():
+              try:
+                  original_build()
+              except FileExistsError as e:
+                  if 'Resources' in str(e):
+                      print("Detected framework symlink conflict, attempting to fix...")
+                      clean_framework_links()
+                      # Try building again
+                      original_build()
+                  else:
+                      raise
+
+          if __name__ == "__main__":
+              patched_build()
+          EOF
+
       - name: Build application
-        run: pdm run build
+        run: pdm run python fix_build.py
 
       - name: Verify build output
         run: |
@@ -242,6 +229,8 @@ jobs:
   build-macos-arm64:
     needs: create-release
     runs-on: macos-latest
+    permissions:
+      contents: write
     steps:
       - uses: actions/checkout@v3
 
@@ -267,13 +256,55 @@ jobs:
       - name: Install dependencies
         run: pdm install
 
+      - name: Clean output directory
+        run: |
+          rm -rf dist/ build/
+          mkdir -p dist
+
       - name: Modify build script for ARM64
         run: |
           echo 'export ARCHFLAGS="-arch arm64"' >> $HOME/.bash_profile
           source $HOME/.bash_profile
 
+          # Create a temporary build script to fix PyInstaller's Qt framework issues
+          cat > fix_build.py << 'EOF'
+          import os
+          import sys
+          import shutil
+          from pathlib import Path
+
+          # Import the original build module
+          sys.path.insert(0, os.getcwd())
+          from build import build as original_build
+
+          def clean_framework_links():
+              # Clean up directories that might cause symlink conflicts
+              print("Cleaning up potential framework symlink conflicts...")
+              qt_dirs = list(Path('dist').glob('**/Qt*.framework'))
+              for qt_dir in qt_dirs:
+                  resources_dir = qt_dir / 'Resources'
+                  if resources_dir.exists() and resources_dir.is_symlink():
+                      print(f"Removing symlink: {resources_dir}")
+                      resources_dir.unlink()
+
+          def patched_build():
+              try:
+                  original_build()
+              except FileExistsError as e:
+                  if 'Resources' in str(e):
+                      print("Detected framework symlink conflict, attempting to fix...")
+                      clean_framework_links()
+                      # Try building again
+                      original_build()
+                  else:
+                      raise
+
+          if __name__ == "__main__":
+              patched_build()
+          EOF
+
       - name: Build application
-        run: pdm run build
+        run: pdm run python fix_build.py
 
       - name: Verify build output
         run: |
@@ -316,6 +347,8 @@ jobs:
   build-macos-universal:
     needs: [build-macos-x64, build-macos-arm64]
     runs-on: macos-latest
+    permissions:
+      contents: write
     steps:
       - uses: actions/checkout@v3
 
@@ -341,10 +374,56 @@ jobs:
       - name: Install dependencies
         run: pdm install
 
+      - name: Clean output directory
+        run: |
+          rm -rf dist/ build/
+          mkdir -p dist
+
+      - name: Modify build script for Universal Binary
+        run: |
+          export ARCHFLAGS="-arch x86_64 -arch arm64"
+
+          # Create a temporary build script to fix PyInstaller's Qt framework issues
+          cat > fix_build.py << 'EOF'
+          import os
+          import sys
+          import shutil
+          from pathlib import Path
+
+          # Import the original build module
+          sys.path.insert(0, os.getcwd())
+          from build import build as original_build
+
+          def clean_framework_links():
+              # Clean up directories that might cause symlink conflicts
+              print("Cleaning up potential framework symlink conflicts...")
+              qt_dirs = list(Path('dist').glob('**/Qt*.framework'))
+              for qt_dir in qt_dirs:
+                  resources_dir = qt_dir / 'Resources'
+                  if resources_dir.exists() and resources_dir.is_symlink():
+                      print(f"Removing symlink: {resources_dir}")
+                      resources_dir.unlink()
+
+          def patched_build():
+              try:
+                  original_build()
+              except FileExistsError as e:
+                  if 'Resources' in str(e):
+                      print("Detected framework symlink conflict, attempting to fix...")
+                      clean_framework_links()
+                      # Try building again
+                      original_build()
+                  else:
+                      raise
+
+          if __name__ == "__main__":
+              patched_build()
+          EOF
+
       - name: Build with Universal Binary
         run: |
           export ARCHFLAGS="-arch x86_64 -arch arm64"
-          pdm run build
+          pdm run python fix_build.py
 
       - name: Verify build output
         run: |
@@ -387,6 +466,8 @@ jobs:
   build-linux-x64:
     needs: create-release
     runs-on: ubuntu-latest
+    permissions:
+      contents: write
     steps:
       - uses: actions/checkout@v3
 
@@ -400,7 +481,11 @@ jobs:
       - name: Install system dependencies
         run: |
           sudo apt-get update
-          sudo apt-get install -y libgl1-mesa-glx libegl1-mesa libxkbcommon-x11-0 libxcb-image0 libxcb-keysyms1 libxcb-render-util0 libxcb-xinerama0 libxcb-icccm4 libxcb-shape0
+          # Update dependency package names to work with Ubuntu 24.04
+          sudo apt-get install -y libgl1 libegl1 libxkbcommon-x11-0 \
+            libxcb-image0 libxcb-keysyms1 libxcb-render-util0 \
+            libxcb-xinerama0 libxcb-icccm4 libxcb-shape0 \
+            libxcb-cursor0 libxcb-xkb1 libxcb-randr0
 
       - name: Install PDM
         run: |
@@ -417,6 +502,11 @@ jobs:
 
       - name: Install dependencies
         run: pdm install
+
+      - name: Clean output directory
+        run: |
+          rm -rf dist/ build/
+          mkdir -p dist
 
       - name: Build application
         run: pdm run build
@@ -462,6 +552,8 @@ jobs:
   build-linux-arm64:
     needs: create-release
     runs-on: ubuntu-latest
+    permissions:
+      contents: write
     steps:
       - uses: actions/checkout@v3
 
@@ -473,6 +565,11 @@ jobs:
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v2
 
+      - name: Clean output directory
+        run: |
+          rm -rf dist/ build/
+          mkdir -p dist
+
       - name: Build in ARM64 container
         uses: addnab/docker-run-action@v3
         with:
@@ -481,10 +578,20 @@ jobs:
           run: |
             cd /workspace
             apt-get update
-            apt-get install -y libgl1-mesa-glx libegl1-mesa libxkbcommon-x11-0 libxcb-image0 libxcb-keysyms1 libxcb-render-util0 libxcb-xinerama0 libxcb-icccm4 libxcb-shape0 zip
+            # Update dependency package names to work with Linux ARM64
+            apt-get install -y libgl1 libegl1 libxkbcommon-x11-0 \
+              libxcb-image0 libxcb-keysyms1 libxcb-render-util0 \
+              libxcb-xinerama0 libxcb-icccm4 libxcb-shape0 \
+              libxcb-cursor0 libxcb-xkb1 libxcb-randr0 zip
             python -m pip install --upgrade pip
             pip install pdm
             pdm install
+
+            # Clean before building
+            rm -rf dist/ build/
+            mkdir -p dist
+
+            # Build
             pdm run build
 
             # Verify build output

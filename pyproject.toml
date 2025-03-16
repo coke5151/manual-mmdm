@@ -9,7 +9,13 @@ readme = "README.md"
 license = { text = "MIT" }
 
 [dependency-groups]
-dev = ["ruff", "mypy", "jupyterlab"]
+dev = [
+    "ruff",
+    "mypy",
+    "jupyterlab",
+    "pyinstaller>=6.12.0",
+    "pillow>=11.1.0",
+]
 
 [tool.pyright]
 exclude = [".venv", "venv"]
@@ -60,3 +66,4 @@ distribution = false
 [tool.pdm.scripts]
 main = "python src/main.py"
 lab = "jupyter lab"
+build = "python build.py"

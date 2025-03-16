@@ -19,14 +19,39 @@ A desktop application for managing Minecraft mods and their dependencies with a 
 - Expandable/collapsible dependency view
 - Automatic file management
 
-## Requirements
+## Installation
+
+### Pre-built Binaries
+
+We provide pre-built binaries for multiple platforms. Visit the [Releases](https://github.com/coke5151/manual-mmdm/releases) page to download the version for your platform:
+
+#### Windows
+- Windows x64 (64-bit)
+- Windows x86 (32-bit)
+
+#### macOS
+- macOS Universal (Intel & Apple Silicon)
+- macOS x64 (Intel only)
+- macOS arm64 (Apple Silicon only)
+
+#### Linux
+- Linux x64 (64-bit)
+- Linux arm64 (ARM 64-bit)
+
+Simply download the appropriate ZIP file for your platform, extract it, and run the executable.
+
+### Building from Source
+
+If you prefer to build from source, follow these steps:
+
+#### Requirements
 
 - Python 3.13+
 - PyQt6
 - SQLAlchemy
 - PDM (Python package manager)
 
-## Installation
+#### Steps
 
 1. Clone the repository:
 ```bash
@@ -39,12 +64,12 @@ cd manual-mmdm
 pdm install
 ```
 
-## Usage
-
-Run the application:
+3. Run the application:
 ```bash
 pdm run main
 ```
+
+## Usage
 
 ### Basic Operations
 
@@ -60,6 +85,20 @@ pdm run main
 - `src/main.py`: Main application and GUI implementation
 - `src/models.py`: Database models and relationships
 - `src/database.py`: Database configuration
+
+## Contributing
+
+### Releasing New Versions
+
+When releasing a new version:
+
+1. Create and push a tag in the format `v*` (e.g., `v1.0.0`):
+```bash
+git tag v1.0.0
+git push origin v1.0.0
+```
+
+This will trigger the automatic build process for all supported platforms.
 
 ## License
 

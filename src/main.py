@@ -268,11 +268,10 @@ class ModDialog(QDialog):
             filename = os.path.basename(file_path)
             self.filename_edit.setText(filename)
 
-            # Set module name (if not set)
-            if not self.name_edit.text():
-                # Remove extension and replace underscores with spaces
-                name = os.path.splitext(filename)[0].replace("_", " ")
-                self.name_edit.setText(name)
+            # Always update module name when file is changed
+            # This allows the name to be updated even when switching between different files
+            name = os.path.splitext(filename)[0].replace("_", " ")
+            self.name_edit.setText(name)
 
     def load_categories(self):
         with SessionLocal() as db:

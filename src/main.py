@@ -607,6 +607,35 @@ class CategoryManagerDialog(QDialog):
                     self.load_categories()
 
 
+class AboutDialog(QDialog):
+    def __init__(self, parent=None):
+        super().__init__(parent)
+        self.translations = parent.translations if parent else TRANSLATIONS["en"]
+        self.setWindowTitle(self.translations["about_title"])
+        self.setup_ui()
+        # Remove the ? button from the title bar
+        self.setWindowFlags(self.windowFlags() & ~Qt.WindowType.WindowContextHelpButtonHint)
+
+    def setup_ui(self):
+        layout = QVBoxLayout()
+
+        # Create a QLabel for the content
+        content_label = QLabel(self.translations["about_content"])
+        content_label.setOpenExternalLinks(True)  # Enable clicking links
+        content_label.setTextFormat(Qt.TextFormat.RichText)  # Enable HTML formatting
+        layout.addWidget(content_label)
+
+        # Add OK button
+        button_layout = QHBoxLayout()
+        ok_button = QPushButton(self.translations["button_close"])
+        ok_button.clicked.connect(self.accept)
+        button_layout.addStretch()
+        button_layout.addWidget(ok_button)
+        layout.addLayout(button_layout)
+
+        self.setLayout(layout)
+
+
 class MainWindow(QMainWindow):
     def __init__(self):
         super().__init__()
@@ -703,6 +732,11 @@ class MainWindow(QMainWindow):
             language_menu.triggered.connect(
                 lambda action: self.update_language_menu(action, [english_action, chinese_action])
             )
+
+        # About menu
+        about_action: QAction = QAction(self.translations["menu_about"], self)
+        about_action.triggered.connect(self.show_about)
+        menubar.addAction(about_action)
 
         # Main content area
         central_widget = QWidget()
@@ -838,6 +872,7 @@ class MainWindow(QMainWindow):
         # Update menu items
         menubar = self.menuBar()
         if menubar:
+            # Update regular menus
             menus = menubar.findChildren(QMenu)
             for menu in menus:
                 if menu.title() in ["File", "檔案"]:
@@ -846,6 +881,11 @@ class MainWindow(QMainWindow):
                     menu.setTitle(self.translations["menu_manage"])
                 elif menu.title() in ["Language", "語言"]:
                     menu.setTitle(self.translations["menu_language"])
+
+            # Update About action
+            for action in menubar.actions():
+                if action.text() in ["About", "關於"]:
+                    action.setText(self.translations["menu_about"])
 
         # Update buttons
         for button in self.findChildren(QPushButton):
@@ -1373,6 +1413,11 @@ class MainWindow(QMainWindow):
             QMessageBox.critical(
                 self, self.translations["title_error"], self.translations["msg_json_import_failed"].format(str(e))
             )
+
+    def show_about(self):
+        """Show about dialog"""
+        dialog = AboutDialog(self)
+        dialog.exec()
 
     def showEvent(self, event):  # noqa: N802 (This is special method of Qt)
         """When window is shown, set initial column widths"""

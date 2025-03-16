@@ -3,7 +3,7 @@
 TRANSLATIONS = {
     "en": {
         # Window titles
-        "main_window_title": "Minecraft Module Manager",
+        "main_window_title": "Minecraft Mod Manager",
         "add_edit_mod_title": "Add/Edit Mod",
         "add_category_title": "Add Category",
         "edit_category_title": "Edit Category",
@@ -23,6 +23,7 @@ TRANSLATIONS = {
         "menu_export_server": "Export Server Mods",
         "menu_export_json": "Export to JSON",
         "menu_import_json": "Import from JSON",
+        "menu_about": "About",
         # Buttons
         "button_browse": "Browse...",
         "button_save": "Save",
@@ -101,6 +102,15 @@ TRANSLATIONS = {
         "dialog_json_export": "Export Data to JSON",
         "dialog_json_import": "Import Data from JSON",
         "dialog_json_filter": "JSON Files (*.json);;All Files (*.*)",
+        "about_title": "About Manual MMDM",
+        "about_content": """<h3>Manual Minecraft Dependency Manager (MMDM)</h3>
+
+A tool for managing Minecraft mod dependencies.<br>
+Version: 1.0.0<br><br>
+
+<a href="https://github.com/coke5151/manual-mmdm">GitHub: https://github.com/coke5151/manual-mmdm</a><br><br>
+
+© 2025 Pytree. All rights reserved.""",
     },
     "zh_TW": {
         # Window titles
@@ -124,6 +134,7 @@ TRANSLATIONS = {
         "menu_export_server": "匯出伺服端模組",
         "menu_export_json": "匯出至JSON",
         "menu_import_json": "從JSON匯入",
+        "menu_about": "關於",
         # Buttons
         "button_browse": "瀏覽...",
         "button_save": "儲存",
@@ -152,7 +163,7 @@ TRANSLATIONS = {
         "header_translated": "已翻譯",
         "header_client": "客戶端",
         "header_server": "伺服器",
-        "header_dependencies": "相依性",
+        "header_dependencies": "依賴",
         "header_filename": "檔案名稱",
         "header_notes": "備註",
         # Checkboxes
@@ -200,5 +211,14 @@ TRANSLATIONS = {
         "dialog_json_export": "匯出資料至JSON",
         "dialog_json_import": "從JSON匯入資料",
         "dialog_json_filter": "JSON檔案 (*.json);;所有檔案 (*.*)",
+        "about_title": "關於 Manual MMDM",
+        "about_content": """<h3>Manual Minecraft Dependency Manager (MMDM)</h3>
+
+一個用於管理 Minecraft 模組依賴的工具。<br>
+版本：1.0.0<br><br>
+
+<a href="https://github.com/coke5151/manual-mmdm">GitHub：https://github.com/coke5151/manual-mmdm</a><br><br>
+
+© 2025 Pytree. 保留所有權利。""",
     },
 }

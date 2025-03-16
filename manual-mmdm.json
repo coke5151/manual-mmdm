@@ -1,0 +1,48 @@
+{
+    "categories": [
+        {
+            "name": "Default"
+        }
+    ],
+    "mods": [
+        {
+            "name": "appleskin-forge-mc1.19-2.4.2",
+            "filename": "appleskin-forge-mc1.19-2.4.2.jar",
+            "is_translated": false,
+            "client_required": false,
+            "server_required": false,
+            "notes": "",
+            "categories": [
+                "Default"
+            ],
+            "dependencies": []
+        },
+        {
+            "name": "BetterAdvancements-1.19.2-0.3.0.148",
+            "filename": "BetterAdvancements-1.19.2-0.3.0.148.jar",
+            "is_translated": true,
+            "client_required": true,
+            "server_required": false,
+            "notes": "",
+            "categories": [
+                "Default"
+            ],
+            "dependencies": []
+        },
+        {
+            "name": "Forgematica-0.1.10-mc1.19.2",
+            "filename": "Forgematica-0.1.10-mc1.19.2.jar",
+            "is_translated": false,
+            "client_required": false,
+            "server_required": false,
+            "notes": "",
+            "categories": [
+                "Default"
+            ],
+            "dependencies": [
+                "appleskin-forge-mc1.19-2.4.2",
+                "BetterAdvancements-1.19.2-0.3.0.148"
+            ]
+        }
+    ]
+}

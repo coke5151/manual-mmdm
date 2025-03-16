@@ -282,8 +282,10 @@ class ModDialog(QDialog):
                 db.add(uncategorized)
                 db.commit()
 
-            # Load all categories
-            categories = db.query(Category).all()
+            # Load all categories ordered by name (case-insensitive)
+            from sqlalchemy.sql import func
+
+            categories = db.query(Category).order_by(func.lower(Category.name)).all()
             self.category_combo.clear()
             for category in categories:
                 self.category_combo.addItem(category.name)
@@ -296,7 +298,10 @@ class ModDialog(QDialog):
 
     def load_mods(self):
         with SessionLocal() as db:
-            mods = db.query(Mod).all()
+            # Get all mods ordered by name (case-insensitive)
+            from sqlalchemy.sql import func
+
+            mods = db.query(Mod).order_by(func.lower(Mod.name)).all()
             self.available_list.clear()
             self.selected_list.clear()
 
@@ -549,8 +554,10 @@ class CategoryManagerDialog(QDialog):
                 db.add(default_category)
                 db.commit()
 
-            # Load all categories
-            categories = db.query(Category).order_by(Category.name).all()
+            # Load all categories ordered by name (case-insensitive)
+            from sqlalchemy.sql import func
+
+            categories = db.query(Category).order_by(func.lower(Category.name)).all()
             for category in categories:
                 self.category_list.addItem(category.name)
 
@@ -1087,7 +1094,10 @@ class MainWindow(QMainWindow):
 
     def load_mods(self):
         with SessionLocal() as db:
-            mods = db.query(Mod).all()
+            # Get all mods ordered by name (case-insensitive)
+            from sqlalchemy.sql import func
+
+            mods = db.query(Mod).order_by(func.lower(Mod.name)).all()
             self.mod_table.setRowCount(len(mods))
             is_expanded = self.expand_button.isChecked()
 
@@ -1097,7 +1107,8 @@ class MainWindow(QMainWindow):
                 name_item.setFlags(name_item.flags() & ~Qt.ItemFlag.ItemIsEditable)
                 self.mod_table.setItem(i, 0, name_item)
 
-                category_item = QTableWidgetItem(", ".join(c.name for c in mod.categories))
+                # Sort categories by name (case-insensitive)
+                category_item = QTableWidgetItem(", ".join(sorted([c.name for c in mod.categories], key=str.lower)))
                 category_item.setFlags(category_item.flags() & ~Qt.ItemFlag.ItemIsEditable)
                 self.mod_table.setItem(i, 1, category_item)
 
@@ -1121,9 +1132,17 @@ class MainWindow(QMainWindow):
 
                 # Show dependencies based on expand state
                 if is_expanded:
-                    dependencies_text = "\n".join(f"• {d.name}" for d in mod.dependencies) if mod.dependencies else ""
+                    # Sort dependencies by name (case-insensitive) and format with bullet points
+                    dependencies_text = (
+                        "\n".join(f"• {d.name}" for d in sorted(mod.dependencies, key=lambda x: x.name.lower()))
+                        if mod.dependencies
+                        else ""
+                    )
                 else:
-                    dependencies_text = ", ".join(d.name for d in mod.dependencies)
+                    # Sort dependencies by name (case-insensitive) and join with commas
+                    dependencies_text = ", ".join(
+                        d.name for d in sorted(mod.dependencies, key=lambda x: x.name.lower())
+                    )
 
                 dependency_item = QTableWidgetItem(dependencies_text)
                 dependency_item.setFlags(dependency_item.flags() & ~Qt.ItemFlag.ItemIsEditable)
@@ -1364,23 +1383,25 @@ class MainWindow(QMainWindow):
 
         try:
             with SessionLocal() as db:
-                # Get all categories
-                categories = db.query(Category).all()
+                # Get all categories ordered by name (case-insensitive)
+                from sqlalchemy.sql import func
+
+                categories = db.query(Category).order_by(func.lower(Category.name)).all()
                 categories_data = []
 
                 for category in categories:
                     categories_data.append({"name": category.name})
 
-                # Get all mods
-                mods = db.query(Mod).all()
+                # Get all mods ordered by name (case-insensitive)
+                mods = db.query(Mod).order_by(func.lower(Mod.name)).all()
                 mods_data = []
 
                 for mod in mods:
-                    # Get category names
-                    category_names = [c.name for c in mod.categories]
+                    # Get category names (sorted case-insensitive)
+                    category_names = sorted([c.name for c in mod.categories], key=str.lower)
 
-                    # Get dependency names
-                    dependency_names = [d.name for d in mod.dependencies]
+                    # Get dependency names (sorted case-insensitive)
+                    dependency_names = sorted([d.name for d in mod.dependencies], key=str.lower)
 
                     mods_data.append(
                         {

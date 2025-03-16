@@ -40,7 +40,30 @@ Base.metadata.create_all(bind=engine)
 class ModDialog(QDialog):
     def __init__(self, parent=None, mod=None):
         super().__init__(parent)
-        self.mod = mod
+        # If editing an existing mod, ensure dependencies are loaded before UI setup
+        if mod:
+            with SessionLocal() as db:
+                # Make sure mod is attached to the current session and dependencies are loaded
+                self.mod = db.merge(mod)
+                # Force loading of all relationships to avoid detached instance errors
+                _ = self.mod.dependencies
+                _ = self.mod.categories
+                # Store necessary attributes to avoid detached instance issues
+                self.mod_name = self.mod.name
+                self.mod_filename = self.mod.filename
+                self.mod_is_translated = self.mod.is_translated
+                self.mod_client_required = self.mod.client_required
+                self.mod_server_required = self.mod.server_required
+                self.mod_notes = self.mod.notes
+                self.mod_id = self.mod.id
+                # Store dependencies and categories for later use
+                self.mod_dependencies = [d.name for d in self.mod.dependencies]
+                self.mod_categories = [c.name for c in self.mod.categories] if self.mod.categories else []
+        else:
+            self.mod = None
+            self.mod_dependencies = []
+            self.mod_categories = []
+
         self.last_selected_file = None
         self.translations = parent.translations if parent else TRANSLATIONS["en"]
         self.setWindowTitle(self.translations["add_edit_mod_title"])
@@ -212,23 +235,24 @@ class ModDialog(QDialog):
 
         self.setLayout(layout)
 
-        # Load initial data
-        self.load_mods()  # Ensure modules are loaded in both add and edit modes
-
+        # Set module attributes first if editing an existing module
         if self.mod:
-            self.name_edit.setText(self.mod.name)
-            self.filename_edit.setText(self.mod.filename)
-            self.is_translated.setChecked(self.mod.is_translated)
-            self.client_required.setChecked(self.mod.client_required)
-            self.server_required.setChecked(self.mod.server_required)
-            self.notes_edit.setText(self.mod.notes)
+            self.name_edit.setText(self.mod_name)
+            self.filename_edit.setText(self.mod_filename)
+            self.is_translated.setChecked(self.mod_is_translated)
+            self.client_required.setChecked(self.mod_client_required)
+            self.server_required.setChecked(self.mod_server_required)
+            self.notes_edit.setText(self.mod_notes)
 
             # Set categories
-            if self.mod.categories:
-                category_name = self.mod.categories[0].name
+            if self.mod_categories:
+                category_name = self.mod_categories[0]
                 index = self.category_combo.findText(category_name)
                 if index >= 0:
                     self.category_combo.setCurrentIndex(index)
+
+        # Load mods after setting all attributes to ensure dependencies are preserved
+        self.load_mods()
 
     def browse_file(self):
         file_path, _ = QFileDialog.getOpenFileName(
@@ -279,11 +303,11 @@ class ModDialog(QDialog):
 
             for mod in mods:
                 # Don't show self as dependency option
-                if self.mod and mod.id == self.mod.id:
+                if self.mod and mod.id == self.mod_id:
                     continue
 
                 # If in edit mode and module is a dependency, add to selected list
-                if self.mod and mod in self.mod.dependencies:
+                if self.mod and mod.name in self.mod_dependencies:
                     self.selected_list.addItem(mod.name)
                 else:
                     # Otherwise add to available list
@@ -331,7 +355,13 @@ class ModDialog(QDialog):
         with SessionLocal() as db:
             if self.mod:
                 # Update existing module
-                mod = db.merge(self.mod)  # Merge module into current session
+                mod = db.query(Mod).filter(Mod.id == self.mod_id).first()
+                if not mod:
+                    QMessageBox.critical(
+                        self, self.translations["title_error"], self.translations["msg_module_not_found"]
+                    )
+                    return
+
                 mod.name = name
                 mod.filename = filename
                 mod.is_translated = self.is_translated.isChecked()
@@ -357,7 +387,7 @@ class ModDialog(QDialog):
                 mod.dependencies = dependencies
 
                 # Rename file
-                old_path = mods_dir / self.mod.filename
+                old_path = mods_dir / self.mod_filename
                 new_path = mods_dir / filename
                 try:
                     if old_path != new_path:  # Only rename when filename actually changes
@@ -890,8 +920,6 @@ class MainWindow(QMainWindow):
                         action.setText(self.translations["menu_edit_mod"])
                     elif action.text() in ["Delete Module", "刪除模組"]:
                         action.setText(self.translations["menu_delete_mod"])
-                    elif action.text() in ["Exit", "結束"]:
-                        action.setText(self.translations["menu_exit"])
                     elif action.text() in ["Add Category", "新增分類"]:
                         action.setText(self.translations["menu_add_category"])
                     elif action.text() in ["Manage Categories", "管理分類"]:

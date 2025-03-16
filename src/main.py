@@ -475,47 +475,48 @@ class CategoryManagerDialog(QDialog):
         self.translations = parent.translations if parent else TRANSLATIONS["en"]
         self.setWindowTitle(self.translations["manage_categories_title"])
         self.setup_ui()
-        self.ensure_uncategorized_exists()
-        self.load_categories()
 
     def setup_ui(self):
         layout = QVBoxLayout()
-
-        # Category list
         self.category_list = QListWidget()
         layout.addWidget(self.category_list)
 
         # Buttons
         button_layout = QHBoxLayout()
+
         add_button = QPushButton(self.translations["button_add"])
         add_button.clicked.connect(self.add_category)
-        edit_button = QPushButton(self.translations["button_edit"])
-        edit_button.clicked.connect(self.edit_category)
+        button_layout.addWidget(add_button)
+
         delete_button = QPushButton(self.translations["button_delete"])
         delete_button.clicked.connect(self.delete_category)
+        button_layout.addWidget(delete_button)
+
         close_button = QPushButton(self.translations["button_close"])
         close_button.clicked.connect(self.accept)
-        button_layout.addWidget(add_button)
-        button_layout.addWidget(edit_button)
-        button_layout.addWidget(delete_button)
         button_layout.addWidget(close_button)
-        layout.addLayout(button_layout)
 
+        layout.addLayout(button_layout)
         self.setLayout(layout)
 
-    def ensure_uncategorized_exists(self):
-        """Ensure the "Uncategorized" category exists"""
-        with SessionLocal() as db:
-            uncategorized = db.query(Category).filter(Category.name == self.translations["label_uncategorized"]).first()
-            if not uncategorized:
-                uncategorized = Category(name=self.translations["label_uncategorized"])
-                db.add(uncategorized)
-                db.commit()
+        # Load initial categories
+        self.load_categories()
 
     def load_categories(self):
+        """Load categories from database"""
+        self.category_list.clear()
         with SessionLocal() as db:
-            categories = db.query(Category).all()
-            self.category_list.clear()
+            # Ensure default category exists
+            default_category = (
+                db.query(Category).filter(Category.name == self.translations["label_uncategorized"]).first()
+            )
+            if not default_category:
+                default_category = Category(name=self.translations["label_uncategorized"])
+                db.add(default_category)
+                db.commit()
+
+            # Load all categories
+            categories = db.query(Category).order_by(Category.name).all()
             for category in categories:
                 self.category_list.addItem(category.name)
 
@@ -530,36 +531,6 @@ class CategoryManagerDialog(QDialog):
                     db.commit()
                 self.load_categories()
 
-    def edit_category(self):
-        current_item = self.category_list.currentItem()
-        if not current_item:
-            QMessageBox.warning(
-                self,
-                self.translations["title_warning"],
-                self.translations["msg_select_category"],
-            )
-            return
-
-        # Do not allow editing "Uncategorized"
-        if current_item.text() == self.translations["label_uncategorized"]:
-            QMessageBox.warning(
-                self,
-                self.translations["title_warning"],
-                self.translations["msg_cannot_delete_uncategorized"],
-            )
-            return
-
-        with SessionLocal() as db:
-            category = db.query(Category).filter(Category.name == current_item.text()).first()
-            if category:
-                dialog = CategoryDialog(self, category)
-                if dialog.exec():
-                    name = dialog.get_category_name()
-                    if name:
-                        category.name = name
-                        db.commit()
-                        self.load_categories()
-
     def delete_category(self):
         current_item = self.category_list.currentItem()
         if not current_item:
@@ -570,7 +541,7 @@ class CategoryManagerDialog(QDialog):
             )
             return
 
-        # Do not allow deleting "Uncategorized"
+        # Do not allow deleting "Default"
         if current_item.text() == self.translations["label_uncategorized"]:
             QMessageBox.warning(
                 self,
@@ -591,20 +562,47 @@ class CategoryManagerDialog(QDialog):
                 # Get the category to delete
                 category = db.query(Category).filter(Category.name == current_item.text()).first()
                 if category:
-                    # Get the "Uncategorized" category
-                    uncategorized = (
+                    # Get the "Default" category
+                    default_category = (
                         db.query(Category).filter(Category.name == self.translations["label_uncategorized"]).first()
                     )
 
-                    if uncategorized:
-                        # Move all mods in this category to "Uncategorized"
-                        for mod in category.mods:
-                            mod.categories = [uncategorized]
+                    if default_category:
+                        # Get all mods in this category
+                        mods_to_update = db.query(Mod).filter(Mod.categories.any(id=category.id)).all()
+
+                        # Move all mods to "Default"
+                        for mod in mods_to_update:
+                            # Remove all existing categories
+                            mod.categories.clear()
+                            # Add default category
+                            mod.categories.append(default_category)
+
+                        # Commit the changes to mods
+                        db.commit()
 
                     # Delete the category
                     db.delete(category)
                     db.commit()
+
+                    # Reload categories
                     self.load_categories()
+
+                    # Signal that changes were made by accepting the dialog
+                    self.accept()
+
+                    # Reload mods in the main window
+                    from typing import cast
+
+                    parent = cast(MainWindow, self.parent())
+                    if isinstance(parent, MainWindow):
+                        parent.load_mods()
+
+    def closeEvent(self, event):  # noqa: N802
+        """Override close event to notify parent to reload mods"""
+        super().closeEvent(event)
+        # Signal that changes were made by accepting the dialog
+        self.accept()
 
 
 class AboutDialog(QDialog):
@@ -879,8 +877,33 @@ class MainWindow(QMainWindow):
                     menu.setTitle(self.translations["menu_file"])
                 elif menu.title() in ["Manage", "管理"]:
                     menu.setTitle(self.translations["menu_manage"])
+                elif menu.title() in ["Export", "匯出"]:
+                    menu.setTitle(self.translations["menu_export"])
                 elif menu.title() in ["Language", "語言"]:
                     menu.setTitle(self.translations["menu_language"])
+
+                # Update menu actions
+                for action in menu.actions():
+                    if action.text() in ["Add Module", "新增模組"]:
+                        action.setText(self.translations["menu_add_mod"])
+                    elif action.text() in ["Edit Module", "編輯模組"]:
+                        action.setText(self.translations["menu_edit_mod"])
+                    elif action.text() in ["Delete Module", "刪除模組"]:
+                        action.setText(self.translations["menu_delete_mod"])
+                    elif action.text() in ["Exit", "結束"]:
+                        action.setText(self.translations["menu_exit"])
+                    elif action.text() in ["Add Category", "新增分類"]:
+                        action.setText(self.translations["menu_add_category"])
+                    elif action.text() in ["Manage Categories", "管理分類"]:
+                        action.setText(self.translations["menu_manage_categories"])
+                    elif action.text() in ["Export Client Mods", "匯出客戶端模組"]:
+                        action.setText(self.translations["menu_export_client"])
+                    elif action.text() in ["Export Server Mods", "匯出伺服端模組"]:
+                        action.setText(self.translations["menu_export_server"])
+                    elif action.text() in ["Export to JSON", "匯出至JSON"]:
+                        action.setText(self.translations["menu_export_json"])
+                    elif action.text() in ["Import from JSON", "從JSON匯入"]:
+                        action.setText(self.translations["menu_import_json"])
 
             # Update About action
             for action in menubar.actions():

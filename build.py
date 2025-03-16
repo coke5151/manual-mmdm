@@ -10,7 +10,7 @@ def build():
     # Clean up dist and build directories
     for dir_name in ["dist", "build"]:
         if os.path.exists(dir_name):
-            shutil.rmtree(dir_name)
+            shutil.rmtree(dir_name, ignore_errors=True)
 
     # Get absolute paths
     base_dir = os.path.abspath(os.path.dirname(__file__))
@@ -29,6 +29,7 @@ def build():
         "--name=manual-mmdm",
         "--noconsole",
         "--clean",
+        "-y",  # Auto-confirm removal of output directory
         # Add hidden imports for PyQt6
         "--hidden-import=PyQt6.QtCore",
         "--hidden-import=PyQt6.QtGui",
@@ -65,7 +66,7 @@ def build():
 
     # Run the build using the spec file
     print("Building from spec file...")
-    PyInstaller.__main__.run(["--clean", spec_file])
+    PyInstaller.__main__.run(["--clean", "-y", spec_file])
 
     # Post-process: manually copy static folder if needed
     dist_dir = os.path.join(base_dir, "dist", "manual-mmdm")

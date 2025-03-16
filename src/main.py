@@ -558,8 +558,17 @@ class CategoryManagerDialog(QDialog):
             from sqlalchemy.sql import func
 
             categories = db.query(Category).order_by(func.lower(Category.name)).all()
+
+            # First add Default category
             for category in categories:
-                self.category_list.addItem(category.name)
+                if category.name == self.translations["label_uncategorized"]:
+                    self.category_list.addItem(category.name)
+                    break
+
+            # Then add all other categories
+            for category in categories:
+                if category.name != self.translations["label_uncategorized"]:
+                    self.category_list.addItem(category.name)
 
     def add_category(self):
         dialog = CategoryDialog(self)
@@ -1111,7 +1120,21 @@ class MainWindow(QMainWindow):
             self.category_filter.clear()
             self.category_filter.addItem(self.translations["label_all_categories"])
 
-            # Add all categories
+            # First add "Default" category if it exists
+            default_category_name = self.translations["label_uncategorized"]
+            default_category = None
+
+            # Find and remove the Default category from the list to add it separately
+            for i, category in enumerate(categories):
+                if category.name == default_category_name:
+                    default_category = categories.pop(i)
+                    break
+
+            # Add Default category first
+            if default_category:
+                self.category_filter.addItem(default_category.name)
+
+            # Add all other categories
             for category in categories:
                 self.category_filter.addItem(category.name)
 
@@ -1214,8 +1237,20 @@ class MainWindow(QMainWindow):
                 name_item.setFlags(name_item.flags() & ~Qt.ItemFlag.ItemIsEditable)
                 self.mod_table.setItem(i, 0, name_item)
 
-                # Sort categories by name (case-insensitive)
-                category_item = QTableWidgetItem(", ".join(sorted([c.name for c in mod.categories], key=str.lower)))
+                # Sort categories with Default first, then others alphabetically
+                default_category_name = self.translations["label_uncategorized"]
+                categories_list = [c.name for c in mod.categories]
+
+                # Check if Default category exists in this mod's categories
+                if default_category_name in categories_list:
+                    # Remove Default and add it to the beginning
+                    categories_list.remove(default_category_name)
+                    sorted_categories = [default_category_name] + sorted(categories_list, key=str.lower)
+                else:
+                    # Just sort alphabetically if no Default
+                    sorted_categories = sorted(categories_list, key=str.lower)
+
+                category_item = QTableWidgetItem(", ".join(sorted_categories))
                 category_item.setFlags(category_item.flags() & ~Qt.ItemFlag.ItemIsEditable)
                 self.mod_table.setItem(i, 1, category_item)
 
@@ -1553,8 +1588,18 @@ class MainWindow(QMainWindow):
                 mods_data = []
 
                 for mod in mods:
-                    # Get category names (sorted case-insensitive)
-                    category_names = sorted([c.name for c in mod.categories], key=str.lower)
+                    # Get category names with Default first, then others alphabetically
+                    default_category_name = self.translations["label_uncategorized"]
+                    category_names = [c.name for c in mod.categories]
+
+                    # Check if Default category exists in this mod's categories
+                    if default_category_name in category_names:
+                        # Remove Default and add it to the beginning
+                        category_names.remove(default_category_name)
+                        sorted_category_names = [default_category_name] + sorted(category_names, key=str.lower)
+                    else:
+                        # Just sort alphabetically if no Default
+                        sorted_category_names = sorted(category_names, key=str.lower)
 
                     # Get dependency names (sorted case-insensitive)
                     dependency_names = sorted([d.name for d in mod.dependencies], key=str.lower)
@@ -1567,7 +1612,7 @@ class MainWindow(QMainWindow):
                             "client_required": mod.client_required,
                             "server_required": mod.server_required,
                             "notes": mod.notes,
-                            "categories": category_names,
+                            "categories": sorted_category_names,
                             "dependencies": dependency_names,
                         }
                     )

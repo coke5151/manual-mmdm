@@ -116,7 +116,7 @@ TRANSLATIONS = {
         "about_content": """<h3>Manual Minecraft Dependency Manager (MMDM)</h3>
 
 A tool for managing Minecraft mod dependencies.<br>
-Version: 1.0.0<br><br>
+Version: 1.1.1<br><br>
 
 <a href="https://github.com/coke5151/manual-mmdm">GitHub: https://github.com/coke5151/manual-mmdm</a><br><br>
 
@@ -235,7 +235,7 @@ Version: 1.0.0<br><br>
         "about_content": """<h3>Manual Minecraft Dependency Manager (MMDM)</h3>
 
 一個用於管理 Minecraft 模組依賴的工具。<br>
-版本：1.0.0<br><br>
+版本：1.1.1<br><br>
 
 <a href="https://github.com/coke5151/manual-mmdm">GitHub：https://github.com/coke5151/manual-mmdm</a><br><br>
 

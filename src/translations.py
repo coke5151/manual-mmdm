@@ -46,6 +46,8 @@ TRANSLATIONS = {
         "label_notes": "Notes:",
         "label_uncategorized": "Default",
         "msg_cannot_delete_uncategorized": "Cannot delete the Default category",
+        "msg_cannot_edit_uncategorized": "Cannot edit the Default category",
+        "msg_category_exists": "Category '{}' already exists",
         # Table headers
         "header_module_name": "Mod Name",
         "header_category": "Category",
@@ -157,6 +159,8 @@ Version: 1.0.0<br><br>
         "label_notes": "備註:",
         "label_uncategorized": "Default",
         "msg_cannot_delete_uncategorized": "無法刪除「Default」分類",
+        "msg_cannot_edit_uncategorized": "無法編輯「Default」分類",
+        "msg_category_exists": "分類「{}」已經存在",
         # Table headers
         "header_module_name": "模組名稱",
         "header_category": "分類",

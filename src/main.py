@@ -517,6 +517,11 @@ class CategoryManagerDialog(QDialog):
         add_button.clicked.connect(self.add_category)
         button_layout.addWidget(add_button)
 
+        # Add edit button
+        edit_button = QPushButton(self.translations["button_edit"])
+        edit_button.clicked.connect(self.edit_category)
+        button_layout.addWidget(edit_button)
+
         delete_button = QPushButton(self.translations["button_delete"])
         delete_button.clicked.connect(self.delete_category)
         button_layout.addWidget(delete_button)
@@ -559,6 +564,64 @@ class CategoryManagerDialog(QDialog):
                     db.add(category)
                     db.commit()
                 self.load_categories()
+
+    def edit_category(self):
+        current_item = self.category_list.currentItem()
+        if not current_item:
+            QMessageBox.warning(
+                self,
+                self.translations["title_warning"],
+                self.translations["msg_select_category"],
+            )
+            return
+
+        # Do not allow editing "Default"
+        if current_item.text() == self.translations["label_uncategorized"]:
+            QMessageBox.warning(
+                self,
+                self.translations["title_warning"],
+                self.translations["msg_cannot_edit_uncategorized"],
+            )
+            return
+
+        with SessionLocal() as db:
+            # Get the category to edit
+            category = db.query(Category).filter(Category.name == current_item.text()).first()
+            if not category:
+                QMessageBox.warning(self, self.translations["title_error"], self.translations["msg_module_not_found"])
+                return
+
+            # Create dialog with the category
+            dialog = CategoryDialog(self, category)
+            if dialog.exec():
+                new_name = dialog.get_category_name()
+                if new_name and new_name != category.name:
+                    # Check if the new name already exists
+                    existing = db.query(Category).filter(Category.name == new_name).first()
+                    if existing:
+                        QMessageBox.warning(
+                            self,
+                            self.translations["title_error"],
+                            self.translations["msg_category_exists"].format(new_name),
+                        )
+                        return
+
+                    # Update category name
+                    category.name = new_name
+                    db.commit()
+
+                    # Reload categories
+                    self.load_categories()
+
+                    # Signal that changes were made
+                    self.accept()
+
+                    # Reload mods in the main window to show updated category names
+                    from typing import cast
+
+                    parent = cast(MainWindow, self.parent())
+                    if isinstance(parent, MainWindow):
+                        parent.load_mods()
 
     def delete_category(self):
         current_item = self.category_list.currentItem()

@@ -46,6 +46,8 @@ TRANSLATIONS = {
         "label_category_name": "Category Name:",
         "label_notes": "Notes:",
         "label_uncategorized": "Default",
+        "label_filter_category": "Filter by Category:",
+        "label_all_categories": "All Categories",
         "msg_cannot_delete_uncategorized": "Cannot delete the Default category",
         "msg_cannot_edit_uncategorized": "Cannot edit the Default category",
         "msg_category_exists": "Category '{}' already exists",
@@ -65,6 +67,7 @@ TRANSLATIONS = {
         # Messages
         "msg_ready": "Ready",
         "msg_total_mods": "Total {} mods",
+        "msg_filtered_mods": "Showing {} mods",
         "msg_select_module": "Please select a mod",
         "msg_select_category": "Please select a category",
         "msg_unable_get_name": "Unable to get mod name",
@@ -164,6 +167,8 @@ Version: 1.0.0<br><br>
         "label_category_name": "分類名稱:",
         "label_notes": "備註:",
         "label_uncategorized": "Default",
+        "label_filter_category": "依分類篩選:",
+        "label_all_categories": "所有分類",
         "msg_cannot_delete_uncategorized": "無法刪除「Default」分類",
         "msg_cannot_edit_uncategorized": "無法編輯「Default」分類",
         "msg_category_exists": "分類「{}」已經存在",
@@ -183,6 +188,7 @@ Version: 1.0.0<br><br>
         # Messages
         "msg_ready": "就緒",
         "msg_total_mods": "共 {} 個模組",
+        "msg_filtered_mods": "顯示 {} 個模組",
         "msg_select_module": "請先選擇一個模組",
         "msg_select_category": "請先選擇一個分類",
         "msg_unable_get_name": "無法獲取模組名稱",

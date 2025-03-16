@@ -887,6 +887,13 @@ class MainWindow(QMainWindow):
         self.search_edit = QLineEdit()
         self.search_edit.textChanged.connect(self.filter_mods)
         search_layout.addWidget(self.search_edit)
+
+        # Add category filter
+        search_layout.addWidget(QLabel(self.translations["label_filter_category"]))
+        self.category_filter = QComboBox()
+        self.category_filter.currentIndexChanged.connect(self.filter_mods)
+        search_layout.addWidget(self.category_filter)
+
         layout.addLayout(search_layout)
 
         # Module list
@@ -1034,6 +1041,14 @@ class MainWindow(QMainWindow):
         for label in self.findChildren(QLabel):
             if label.text() in ["Search:", "搜尋:"]:
                 label.setText(self.translations["label_search"])
+            elif label.text() in ["Filter by Category:", "依分類篩選:"]:
+                label.setText(self.translations["label_filter_category"])
+
+        # Update category filter
+        current_index = self.category_filter.currentIndex()
+        self.update_category_filter()
+        if current_index >= 0:
+            self.category_filter.setCurrentIndex(current_index)
 
         # Update table headers
         self.update_table_headers()
@@ -1044,9 +1059,12 @@ class MainWindow(QMainWindow):
             current_text = status_bar.currentMessage()
             if current_text in ["Ready", "就緒"]:
                 status_bar.showMessage(self.translations["msg_ready"])
-            elif "Total" in current_text or "共" in current_text:
+            elif "Total" in current_text or "共" in current_text or "Showing" in current_text or "顯示" in current_text:
                 count = len([i for i in range(self.mod_table.rowCount()) if not self.mod_table.isRowHidden(i)])
-                status_bar.showMessage(self.translations["msg_total_mods"].format(count))
+                if count == self.mod_table.rowCount():
+                    status_bar.showMessage(self.translations["msg_total_mods"].format(count))
+                else:
+                    status_bar.showMessage(self.translations["msg_filtered_mods"].format(count))
 
         # Refresh table contents
         self.load_mods()
@@ -1076,20 +1094,100 @@ class MainWindow(QMainWindow):
                 # Reconnect width change monitoring
                 header.sectionResized.connect(self.update_column_ratios)
 
-    def filter_mods(self):
+    def update_category_filter(self):
+        """Update the category filter dropdown with all available categories."""
+        current_selection = self.category_filter.currentText()
+
+        with SessionLocal() as db:
+            # Get all categories ordered by name (case-insensitive)
+            from sqlalchemy.sql import func
+
+            categories = db.query(Category).order_by(func.lower(Category.name)).all()
+
+            # Temporarily block signals to avoid triggering filter_mods
+            self.category_filter.blockSignals(True)
+
+            # Clear and add "All Categories" option
+            self.category_filter.clear()
+            self.category_filter.addItem(self.translations["label_all_categories"])
+
+            # Add all categories
+            for category in categories:
+                self.category_filter.addItem(category.name)
+
+            # Restore previous selection if it exists
+            if current_selection:
+                index = self.category_filter.findText(current_selection)
+                if index >= 0:
+                    self.category_filter.setCurrentIndex(index)
+
+            # Unblock signals
+            self.category_filter.blockSignals(False)
+
+    def filter_mods(self, update_status=True):
+        """Filter mods based on search text and selected category."""
         search_text = self.search_edit.text().lower()
+        selected_category = self.category_filter.currentText()
+        show_all_categories = selected_category == self.translations["label_all_categories"]
+
         for row in range(self.mod_table.rowCount()):
-            show_row = False
-            for col in range(self.mod_table.columnCount()):
-                item = self.mod_table.item(row, col)
-                if item and search_text in item.text().lower():
-                    show_row = True
-                    break
-            self.mod_table.setRowHidden(row, not show_row)
+            # Check if mod matches search text
+            text_match = False
+            if search_text:
+                for col in range(self.mod_table.columnCount()):
+                    item = self.mod_table.item(row, col)
+                    if item and search_text in item.text().lower():
+                        text_match = True
+                        break
+            else:
+                text_match = True  # Empty search shows all
+
+            # Check if mod matches selected category
+            category_match = True
+            if not show_all_categories:
+                category_item = self.mod_table.item(row, 1)  # Category column
+                if category_item:
+                    # Check if selected category is in the mod's categories
+                    category_match = selected_category in category_item.text().split(", ")
+                else:
+                    category_match = False
+
+            # Show row only if both conditions match
+            self.mod_table.setRowHidden(row, not (text_match and category_match))
+
+        # Update status bar with filtered count
+        if update_status:
+            status_bar = self.statusBar()
+            if status_bar:
+                visible_count = len([i for i in range(self.mod_table.rowCount()) if not self.mod_table.isRowHidden(i)])
+                status_bar.showMessage(self.translations["msg_filtered_mods"].format(visible_count))
 
     def manage_categories(self):
+        # Remember the current filter settings
+        search_text = self.search_edit.text()
+        selected_category = self.category_filter.currentText()
+
+        # Open category manager
         dialog = CategoryManagerDialog(self)
-        dialog.exec()
+        result = dialog.exec()
+
+        if result:
+            # Reload module list and update category filter
+            self.load_mods()
+
+            # Restore filter settings
+            self.search_edit.setText(search_text)
+
+            # Find and set the category if it still exists
+            index = self.category_filter.findText(selected_category)
+            if index >= 0:
+                self.category_filter.setCurrentIndex(index)
+            else:
+                # If category no longer exists, reset to "All Categories"
+                self.category_filter.setCurrentIndex(0)
+
+            # Reapply filters
+            self.filter_mods()
 
     def toggle_dependencies(self):
         is_expanded = self.expand_button.isChecked()
@@ -1106,6 +1204,9 @@ class MainWindow(QMainWindow):
             mods = db.query(Mod).order_by(func.lower(Mod.name)).all()
             self.mod_table.setRowCount(len(mods))
             is_expanded = self.expand_button.isChecked()
+
+            # Update category filter dropdown
+            self.update_category_filter()
 
             for i, mod in enumerate(mods):
                 # Create table items and set them as non-editable
@@ -1180,7 +1281,23 @@ class MainWindow(QMainWindow):
     def add_mod(self):
         dialog = ModDialog(self)
         if dialog.exec():
+            # Remember the current filter settings
+            search_text = self.search_edit.text()
+            selected_category = self.category_filter.currentText()
+
+            # Reload module list
             self.load_mods()
+
+            # Restore filter settings
+            self.search_edit.setText(search_text)
+
+            # Find and set the category if it still exists
+            index = self.category_filter.findText(selected_category)
+            if index >= 0:
+                self.category_filter.setCurrentIndex(index)
+
+            # Reapply filters
+            self.filter_mods()
 
     def add_category(self):
         dialog = CategoryDialog(self)
@@ -1192,7 +1309,24 @@ class MainWindow(QMainWindow):
                     db.add(category)
                     db.commit()
                     db.refresh(category)
-                self.load_mods()  # Reload module list to update categories
+
+                # Remember the current filter settings
+                search_text = self.search_edit.text()
+                selected_category = self.category_filter.currentText()
+
+                # Reload module list and update category filter
+                self.load_mods()
+
+                # Restore filter settings
+                self.search_edit.setText(search_text)
+
+                # Find and set the category if it still exists
+                index = self.category_filter.findText(selected_category)
+                if index >= 0:
+                    self.category_filter.setCurrentIndex(index)
+
+                # Reapply filters
+                self.filter_mods()
 
     def edit_mod(self):
         # Get selected row
@@ -1238,7 +1372,23 @@ class MainWindow(QMainWindow):
             # Open edit dialog
             dialog = ModDialog(self, mod)
             if dialog.exec():
-                self.load_mods()  # Reload module list
+                # Remember the current filter settings
+                search_text = self.search_edit.text()
+                selected_category = self.category_filter.currentText()
+
+                # Reload module list
+                self.load_mods()
+
+                # Restore filter settings
+                self.search_edit.setText(search_text)
+
+                # Find and set the category if it still exists
+                index = self.category_filter.findText(selected_category)
+                if index >= 0:
+                    self.category_filter.setCurrentIndex(index)
+
+                # Reapply filters
+                self.filter_mods()
 
     def delete_mod(self):
         # Get selected row
@@ -1663,8 +1813,17 @@ class MainWindow(QMainWindow):
 
                 db.commit()
 
+                # Remember the current filter settings (if any)
+                search_text = self.search_edit.text()
+
                 # Reload mods
                 self.load_mods()
+
+                # Restore search text (category will be reset during load_mods)
+                if search_text:
+                    self.search_edit.setText(search_text)
+                    # Reapply filters
+                    self.filter_mods()
 
                 QMessageBox.information(
                     self,

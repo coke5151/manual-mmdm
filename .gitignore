@@ -216,3 +216,5 @@ server_mods/
 
 # config file
 config.json
+manual-mmdm.json
+dependency-tree.txt

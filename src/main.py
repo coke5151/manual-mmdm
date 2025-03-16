@@ -807,6 +807,10 @@ class MainWindow(QMainWindow):
             if export_json_action:
                 export_json_action.triggered.connect(self.export_json)
 
+            export_dep_tree_action: QAction | None = export_menu.addAction(self.translations["menu_export_dep_tree"])
+            if export_dep_tree_action:
+                export_dep_tree_action.triggered.connect(self.export_dependency_tree)
+
             import_json_action: QAction | None = export_menu.addAction(self.translations["menu_import_json"])
             if import_json_action:
                 import_json_action.triggered.connect(self.import_json)
@@ -999,6 +1003,8 @@ class MainWindow(QMainWindow):
                         action.setText(self.translations["menu_export_server"])
                     elif action.text() in ["Export to JSON", "匯出至JSON"]:
                         action.setText(self.translations["menu_export_json"])
+                    elif action.text() in ["Export Dependency Tree", "匯出依賴樹"]:
+                        action.setText(self.translations["menu_export_dep_tree"])
                     elif action.text() in ["Import from JSON", "從JSON匯入"]:
                         action.setText(self.translations["menu_import_json"])
 
@@ -1433,6 +1439,131 @@ class MainWindow(QMainWindow):
             QMessageBox.critical(
                 self, self.translations["title_error"], self.translations["msg_json_export_failed"].format(str(e))
             )
+
+    def export_dependency_tree(self):
+        """Export mods dependency tree in formats similar to Python package managers."""
+        # Ask for save location
+        file_path, _ = QFileDialog.getSaveFileName(
+            self,
+            self.translations["dialog_dep_tree_export"],
+            "dependency-tree.txt",
+            self.translations["dialog_txt_filter"],
+        )
+
+        if not file_path:
+            return
+
+        # Add .txt extension if not present
+        if not file_path.lower().endswith(".txt"):
+            file_path += ".txt"
+
+        try:
+            with SessionLocal() as db:
+                # Get all mods ordered by name (case-insensitive)
+                from sqlalchemy.sql import func
+
+                mods = db.query(Mod).order_by(func.lower(Mod.name)).all()
+
+                # Build dependency tree
+                output_text = ""
+
+                # Header
+                output_text += "Dependency Tree:\n"
+                output_text += "=" * 50 + "\n\n"
+
+                # Hierarchical dependency tree section
+                output_text += "# Hierarchical Dependencies\n"
+
+                # Find root mods (not dependencies of any other mod)
+                all_dependencies = set()
+                for mod in mods:
+                    for dep in mod.dependencies:
+                        all_dependencies.add(dep.name)
+
+                root_mods = []
+                for mod in mods:
+                    if mod.name not in all_dependencies:
+                        root_mods.append(mod)
+
+                # If no root mods found, use all mods
+                if not root_mods:
+                    root_mods = mods
+
+                # Sort root mods by name
+                root_mods = sorted(root_mods, key=lambda x: x.name.lower())
+
+                # Generate tree for each root mod
+                for mod in root_mods:
+                    output_text += f"{mod.name}\n"
+                    for i, dep in enumerate(sorted(mod.dependencies, key=lambda x: x.name.lower())):
+                        is_last = i == len(mod.dependencies) - 1
+                        prefix = "└── " if is_last else "├── "
+                        output_text += f"  {prefix}{dep.name}\n"
+
+                        # Generate full tree for each dependency
+                        tree_output = ""
+                        tree_output = self._generate_dependency_tree(dep, tree_output, [mod.name], 1)
+                        output_text += tree_output
+
+                # Add flat dependencies list section
+                output_text += "\n\n# Flat Dependencies List\n"
+                for mod in sorted(mods, key=lambda x: x.name.lower()):
+                    deps = sorted([d.name for d in mod.dependencies], key=str.lower)
+                    output_text += f"{mod.name}"
+                    if deps:
+                        output_text += f" (dependencies: {', '.join(deps)})"
+                    output_text += "\n"
+
+                # Save to file
+                with open(file_path, "w", encoding="utf-8") as f:
+                    f.write(output_text)
+
+                QMessageBox.information(
+                    self,
+                    self.translations["title_export_success"],
+                    self.translations["msg_dep_tree_export_success"].format(file_path),
+                )
+
+        except Exception as e:
+            QMessageBox.critical(
+                self, self.translations["title_error"], self.translations["msg_dep_tree_export_failed"].format(str(e))
+            )
+
+    def _generate_dependency_tree(self, mod, output, visited, level):
+        """Recursively generate dependency tree for a mod."""
+        # Prevent circular dependencies
+        if mod.name in visited:
+            indent = "  " * (level + 1)
+            output += f"{indent}└── {mod.name} (circular dependency)\n"
+            return output
+
+        # Add this mod to visited list
+        visited = visited + [mod.name]
+
+        # Sort dependencies by name (case-insensitive)
+        dependencies = sorted(mod.dependencies, key=lambda x: x.name.lower())
+
+        for i, dep in enumerate(dependencies):
+            indent = "  " * (level + 1)
+            is_last = i == len(dependencies) - 1
+
+            if is_last:
+                prefix = "└── "
+            else:
+                prefix = "├── "
+
+            output += f"{indent}{prefix}{dep.name}\n"
+
+            # Recursively process dependencies
+            with SessionLocal() as db:
+                # Ensure dependency is attached to session
+                dep = db.merge(dep)
+                # Force loading dependencies to avoid detached instance errors
+                _ = dep.dependencies
+                # Call recursively with the updated visited list
+                self._generate_dependency_tree(dep, output, visited, level + 1)
+
+        return output
 
     def import_json(self):
         """Import categories and mods data from a JSON file."""

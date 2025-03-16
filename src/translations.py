@@ -22,6 +22,7 @@ TRANSLATIONS = {
         "menu_export_client": "Export Client Mods",
         "menu_export_server": "Export Server Mods",
         "menu_export_json": "Export to JSON",
+        "menu_export_dep_tree": "Export Dependency Tree",
         "menu_import_json": "Import from JSON",
         "menu_about": "About",
         # Buttons
@@ -85,6 +86,8 @@ TRANSLATIONS = {
         "msg_no_mods_found": "No {} mods found.",
         "msg_json_export_success": "Successfully exported data to {}",
         "msg_json_export_failed": "Failed to export data: {}",
+        "msg_dep_tree_export_success": "Successfully exported dependency tree to {}",
+        "msg_dep_tree_export_failed": "Failed to export dependency tree: {}",
         "msg_json_import_success": "Successfully imported {} categories and {} mods",
         "msg_json_import_failed": "Failed to import data: {}",
         "msg_json_import_confirm": "Importing will replace all existing data. Continue?",
@@ -104,6 +107,8 @@ TRANSLATIONS = {
         "dialog_json_export": "Export Data to JSON",
         "dialog_json_import": "Import Data from JSON",
         "dialog_json_filter": "JSON Files (*.json);;All Files (*.*)",
+        "dialog_dep_tree_export": "Export Dependency Tree",
+        "dialog_txt_filter": "Text Files (*.txt);;All Files (*.*)",
         "about_title": "About Manual MMDM",
         "about_content": """<h3>Manual Minecraft Dependency Manager (MMDM)</h3>
 
@@ -135,6 +140,7 @@ Version: 1.0.0<br><br>
         "menu_export_client": "匯出客戶端模組",
         "menu_export_server": "匯出伺服端模組",
         "menu_export_json": "匯出至JSON",
+        "menu_export_dep_tree": "匯出依賴樹",
         "menu_import_json": "從JSON匯入",
         "menu_about": "關於",
         # Buttons
@@ -196,6 +202,8 @@ Version: 1.0.0<br><br>
         "msg_no_mods_found": "找不到 {} 模組。",
         "msg_json_export_success": "成功匯出資料至 {}",
         "msg_json_export_failed": "匯出資料失敗：{}",
+        "msg_dep_tree_export_success": "成功匯出依賴樹至 {}",
+        "msg_dep_tree_export_failed": "匯出依賴樹失敗：{}",
         "msg_json_import_success": "成功匯入 {} 個分類和 {} 個模組",
         "msg_json_import_failed": "匯入資料失敗：{}",
         "msg_json_import_confirm": "匯入將會取代所有現有資料。是否繼續？",
@@ -215,6 +223,8 @@ Version: 1.0.0<br><br>
         "dialog_json_export": "匯出資料至JSON",
         "dialog_json_import": "從JSON匯入資料",
         "dialog_json_filter": "JSON檔案 (*.json);;所有檔案 (*.*)",
+        "dialog_dep_tree_export": "匯出依賴樹",
+        "dialog_txt_filter": "文字檔案 (*.txt);;所有檔案 (*.*)",
         "about_title": "關於 Manual MMDM",
         "about_content": """<h3>Manual Minecraft Dependency Manager (MMDM)</h3>
 

@@ -1,6 +1,12 @@
-# Manual-MMDM (Minecraft Mod Dependency Manager)
+<div align="center">
 
+# Manual-MMDM
 A desktop application for managing Minecraft mods and their dependencies with a user-friendly interface.
+
+![Manual-MMDM banner](static/Manual-MMDM-banner.png)
+
+</div>
+
 
 ## Features
 

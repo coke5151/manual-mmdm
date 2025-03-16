@@ -4,7 +4,7 @@ import sys
 from pathlib import Path
 
 from PyQt6.QtCore import Qt
-from PyQt6.QtGui import QAction, QResizeEvent
+from PyQt6.QtGui import QAction, QIcon, QResizeEvent
 from PyQt6.QtWidgets import (
     QApplication,
     QCheckBox,
@@ -615,6 +615,15 @@ class MainWindow(QMainWindow):
         self.current_language = self.config.get("language", "en")
         self.translations = TRANSLATIONS[self.current_language]  # Translation dictionary
         self.setWindowTitle(self.translations["main_window_title"])
+        # Set window icon
+        icon_path = Path(__file__).parent.parent / "static" / "mmdm-icon.png"
+        if icon_path.exists():
+            self.setWindowIcon(QIcon(str(icon_path)))
+        else:
+            print(f"Warning: Icon file not found at {icon_path}")
+            # Try to create static directory if it doesn't exist
+            static_dir = Path(__file__).parent.parent / "static"
+            static_dir.mkdir(exist_ok=True)
         # Set default window size
         self.resize(800, 600)
         self.setup_ui()
@@ -1339,7 +1348,7 @@ class MainWindow(QMainWindow):
 
                 # Set dependencies
                 for mod_data in import_data.get("mods", []):
-                    mod = mods.get(mod_data["name"])
+                    mod = mods.get(mod_data["name"])  # type: ignore
                     if mod:
                         dependencies = []
                         for dep_name in mod_data.get("dependencies", []):

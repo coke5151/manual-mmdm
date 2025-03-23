@@ -1513,6 +1513,11 @@ class MainWindow(QMainWindow):
         export_dir = Path(f"{mod_type}_mods")
         export_dir.mkdir(exist_ok=True)
 
+        # Clear the existing directory first
+        for item in export_dir.glob("*"):
+            if item.is_file():
+                item.unlink()  # Delete file
+
         # Get mods based on type
         with SessionLocal() as db:
             if mod_type == "client":
